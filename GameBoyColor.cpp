@@ -71,7 +71,11 @@ void GameBoyColor::CPUReset(const bool useBootROM) {
 		default:
 			CartridgeRAMBytes = 0;
 	}*/
+	initCartridgeRAM(path);
 
+	// Once done, quit
+
+	fclose(cart);
 }
 
 
@@ -91,10 +95,10 @@ void GameBoyColor::initAndLoadCartridge(const std::string &romPath) {
 	cart.read(reinterpret_cast<char*>(CartridgeROMCode), 2); // Is the number right?
 
 	// Dump file contents into CartridgeROM
-	cart.seekg(std::ios::end);
+	/*cart.seekg(std::ios::end);
 	const int size = cart.tellg();
 	CartridgeROM.resize(size);
-	cart.read(reinterpret_cast<char*>(CartridgeROM.data()), size);
+	cart.read(reinterpret_cast<char*>(CartridgeROM.data()), size);*/
 
 	cart.close();
 }
