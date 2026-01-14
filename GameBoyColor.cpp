@@ -108,7 +108,7 @@ void GameBoyColor::initCartridgeRAM(const std::string &romPath) {
 
 	// Fetch RAM code
 	cart.seekg(0x0149);
-	cart.read(reinterpret_cast<char*>(CartridgeRAMCode), 2);
+	cart.read(reinterpret_cast<char*>(CartridgeRAMCode), 1);
 	switch (CartridgeRAMCode) {
 		case 0x02:
 			CartridgeRAMBytes = static_cast<BYTE>(0x2000);
