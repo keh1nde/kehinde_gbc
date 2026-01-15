@@ -47,10 +47,6 @@ struct GameBoyColor {
 	void read(int bitSize);
 	void write();
 
-	// Cartridge Methods
-	void initAndLoadCartridge(const std::string& romPath);
-	void initCartridgeRAM(const std::string &romPath);
-
 // Begin Instructions.
 
 };
