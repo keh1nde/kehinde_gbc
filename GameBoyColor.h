@@ -30,8 +30,32 @@ class CPU {
 	WORD getNextOpcode();
 	void execute();
 
-	// Instructions
+	// ### Instructions ###
 
+	// 8-bit load instructions
+	// NOTE: Could the register load instructions be replaced with
+	// a generic function?
+
+	void LD_r_reg(const WORD& opcode);
+	void LD_r_imm(const WORD& opcode);
+	void LD_r_HL(const WORD& opcode);
+	void LD_HL_reg(const WORD& opcode);
+	void LD_HL_imm(const WORD& opcode);
+	void LD_A_BC(const WORD& opcode);
+	void LD_A_DE(const WORD& opcode);
+	void LD_BC_A(const WORD& opcode);
+	void LD_A_DIR(const WORD& opcode);
+	void LD_DIR_A(const WORD& opcode);
+	void LDH_A_C(const WORD& opcode);
+	void LDH_C_A(const WORD& opcode);
+	void LDH_A_imm(const WORD& opcode);
+	void LDH_imm_A(const WORD& opcode);
+	void LD_A_HLM(const WORD& opcode);
+	void LD_HLM_A(const WORD& opcode);
+	void LD_A_HLP(const WORD& opcode);
+	void LD_HLP_A(const WORD& opcode);
+
+	// 16-bit load instructions
 
 
 
