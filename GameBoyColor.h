@@ -18,15 +18,19 @@ constexpr int c_CarryFlag     = 4;
 
 class CPU {
 	// Registers
-	WORD c_AF; // Accumulator and Flags.
-	WORD c_BC;
-	WORD c_DE;
-	WORD c_HL;
 	WORD c_ProgramCounter;
 	WORD c_StackPointer;
 
+	WORD c_AF;
+	WORD c_BC;
+	WORD c_DE;
+	WORD c_HL;
+
+	// RAM
+	BYTE c_WorkRAM[0x4000];
+
 	// Class Methods
-	explicit CPU(const std::string& cart); // aka the initializer/reset.
+	explicit CPU(const std::string& bootPath, const std::string& cartPath); // aka the initializer/reset.
 	WORD getNextOpcode();
 	void execute();
 
