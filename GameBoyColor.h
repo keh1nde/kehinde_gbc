@@ -21,10 +21,14 @@ class CPU {
 	WORD c_ProgramCounter;
 	WORD c_StackPointer;
 
-	WORD c_AF;
-	WORD c_BC;
-	WORD c_DE;
-	WORD c_HL;
+	BYTE c_A;
+	BYTE c_B;
+	BYTE c_C;
+	BYTE c_D;
+	BYTE c_E;
+	BYTE c_H;
+	BYTE c_F;
+	BYTE c_L;
 
 	// RAM
 	BYTE c_WorkRAM[0x4000];
@@ -33,6 +37,10 @@ class CPU {
 	explicit CPU(const std::string& bootPath, const std::string& cartPath); // aka the initializer/reset.
 	WORD getNextOpcode();
 	void execute();
+
+	// Helper Functions
+	void storeByCode(const BYTE& dest, const BYTE& source);
+	void storeImmediate(const BYTE& dest, const BYTE& imm);
 
 	// ### Instructions ###
 
