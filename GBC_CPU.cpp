@@ -3,7 +3,7 @@
 // Stores the interface for the Game Boy Color CPU core.
 
 
-#include "GameBoyColor.h"
+#include "GBC_CPU.h"
 
 CPU::CPU(const std::string& bootPath, const std::string &cartPath)
 : c_ProgramCounter(0x0000), c_StackPointer(0xFFFE), c_WorkRAM(0x0000), c_A(0x11), c_B(0x00), c_C(0x00), c_D(0x00),
@@ -65,7 +65,7 @@ void CPU::execute() {
 			LD_r_reg(mid, low);
 			break;
 		case 0x46:
-			// TODO: Implement HALT().
+			// TODO: Implement the MMU.
 			break;
 		case 0x47:
 			LD_r_reg(mid, low);
@@ -237,8 +237,6 @@ void CPU::execute() {
 			break;
 
 
-
-
 		default: break; // TODO: Implement error handling.
 	}
 
@@ -247,6 +245,14 @@ void CPU::execute() {
 
 void CPU::LD_r_reg(const BYTE dest, const BYTE source) {
 	storeByCode(dest, source);
+}
+
+void CPU::LD_r_HL(const BYTE H_dest, const BYTE L_dest, const BYTE val) {
+	const BYTE low_val = (val & 0xFF00);
+	const BYTE high_val = (val >> 8) & 0x00FF;
+
+	storeImmediate(H_dest, high_val);
+	storeImmediate(L_dest, low_val);
 }
 
 
@@ -272,6 +278,9 @@ void CPU::storeByCode(const BYTE dest, const BYTE source) {
 			break;
 		case 5:
 			value = c_L;
+			break;
+		case 6:
+			value = c_H;
 			break;
 		case 7:
 			value = c_A;
@@ -299,6 +308,9 @@ void CPU::storeByCode(const BYTE dest, const BYTE source) {
 		case 5:
 			c_L = value;
 			break;
+		case 6: // May need to be removed.
+			c_H = value;
+			break;
 		case 7:
 			c_A = value;
 			break;
@@ -307,6 +319,8 @@ void CPU::storeByCode(const BYTE dest, const BYTE source) {
 	}
 }
 
+
+// 0b10 000 110 4 + 2 + 0 = 6
 void CPU::storeImmediate(const BYTE dest, const BYTE imm) {
 	switch (dest) {
 		case 0:
@@ -327,6 +341,9 @@ void CPU::storeImmediate(const BYTE dest, const BYTE imm) {
 		case 5:
 			c_L = imm;
 			break;
+		case 6: // May need to be removed.
+			c_H = imm;
+			break;
 		case 7:
 			c_A = imm;
 			break;
@@ -334,3 +351,5 @@ void CPU::storeImmediate(const BYTE dest, const BYTE imm) {
 		default: break;
 	}
 }
+
+
