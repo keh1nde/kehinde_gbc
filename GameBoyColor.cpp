@@ -28,42 +28,229 @@ c_E(0x00), c_F(0x00), c_H(0x00), c_L(0x00){
 	// Done above.
 }
 
-WORD CPU::getNextOpcode() {
-	const WORD next = c_ProgramCounter;
+BYTE CPU::getNextOpcode() {
+	const BYTE next = c_WorkRAM[c_ProgramCounter];
 	c_ProgramCounter += 1;
 	return next;
 }
 
 void CPU::execute() {
-	WORD opcode = (getNextOpcode() & 0xF000) & 0b1100;
-	switch (opcode & 0xF0) {
-		case 01:
-			LD_r_reg(opcode);
-			break;
-		case 00:
-			LD_r_imm(opcode);
-		default:
-			throw std::logic_error("OPCode is either invalid or not implemented");
+	const BYTE opcode = getNextOpcode();
+
+	if (opcode == 0xCB) {
+		// TODO: Implement executeCB().
+		return;
 	}
 
+	const BYTE top = opcode >> 6; // Top two bits
+	const BYTE mid = (opcode >> 3) & 0x7; // Middle 3 bits.
+	const BYTE low = opcode & 0x7; // Low 3 bits.
+
+	switch (opcode & 0xC0) {
+		// Note that all opcodes 0x40 - 0x7F are register LD instructions,
+		// except 0x76 which is HALT. Some instructions fetch from memory which requires the MMU.
+		case 0x41:
+			LD_r_reg(mid, low);
+			break;
+		case 0x42:
+			LD_r_reg(mid, low);
+			break;
+		case 0x43:
+			LD_r_reg(mid, low);
+			break;
+		case 0x44:
+			LD_r_reg(mid, low);
+			break;
+		case 0x45:
+			LD_r_reg(mid, low);
+			break;
+		case 0x46:
+			// TODO: Implement HALT().
+			break;
+		case 0x47:
+			LD_r_reg(mid, low);
+			break;
+		case 0x48:
+			LD_r_reg(mid, low);
+			break;
+		case 0x49:
+			LD_r_reg(mid, low);
+			break;
+		case 0x4A:
+			LD_r_reg(mid, low);
+			break;
+		case 0x4B:
+			LD_r_reg(mid, low);
+			break;
+		case 0x4C:
+			LD_r_reg(mid, low);
+			break;
+		case 0x4D:
+			LD_r_reg(mid, low);
+			break;
+		case 0x4E:
+			// TODO: Implement the MMU.
+			break;
+		case 0x4F:
+			LD_r_reg(mid, low);
+			break;
+		case 0x50:
+			LD_r_reg(mid, low);
+			break;
+		case 0x51:
+			LD_r_reg(mid, low);
+			break;
+		case 0x52:
+			LD_r_reg(mid, low);
+			break;
+		case 0x53:
+			LD_r_reg(mid, low);
+			break;
+		case 0x54:
+			LD_r_reg(mid, low);
+			break;
+		case 0x55:
+			LD_r_reg(mid, low);
+			break;
+		case 0x56:
+			// TODO: Implement the MMU.
+			break;
+		case 0x57:
+			LD_r_reg(mid, low);
+			break;
+		case 0x58:
+			LD_r_reg(mid, low);
+			break;
+		case 0x59:
+			LD_r_reg(mid, low);
+			break;
+		case 0x5A:
+			LD_r_reg(mid, low);
+			break;
+		case 0x5B:
+			LD_r_reg(mid, low);
+			break;
+		case 0x5C:
+			LD_r_reg(mid, low);
+			break;
+		case 0x5D:
+			LD_r_reg(mid, low);
+			break;
+		case 0x5E:
+			// TODO: Implement the MMU.
+			break;
+		case 0x5F:
+			LD_r_reg(mid, low);
+			break;
+		case 0x60:
+			LD_r_reg(mid, low);
+			break;
+		case 0x61:
+			LD_r_reg(mid, low);
+			break;
+		case 0x62:
+			LD_r_reg(mid, low);
+			break;
+		case 0x63:
+			LD_r_reg(mid, low);
+			break;
+		case 0x64:
+			LD_r_reg(mid, low);
+			break;
+		case 0x65:
+			LD_r_reg(mid, low);
+			break;
+		case 0x66:
+			// TODO: Implement the MMU.
+			break;
+		case 0x67:
+			LD_r_reg(mid, low);
+			break;
+		case 0x68:
+			LD_r_reg(mid, low);
+			break;
+		case 0x69:
+			LD_r_reg(mid, low);
+			break;
+		case 0x6A:
+			LD_r_reg(mid, low);
+			break;
+		case 0x6B:
+			LD_r_reg(mid, low);
+			break;
+		case 0x6C:
+			LD_r_reg(mid, low);
+			break;
+		case 0x6D:
+			LD_r_reg(mid, low);
+			break;
+		case 0x6E:
+			// TODO: Implement the MMU.
+			break;
+		case 0x6F:
+			LD_r_reg(mid, low);
+			break;
+		case 0x70:
+			// TODO: Implement the MMU
+			break;
+		case 0x71:
+			// TODO: Implement the MMU.
+			break;
+		case 0x73:
+			// TODO: Implement the MMU.
+			break;
+		case 0x74:
+			// TODO: Implement the MMU.
+			break;
+		case 0x75:
+			// TODO: Implement the MMU.
+			break;
+		case 0x76:
+			// TODO: Implement HALT()
+			break;
+		case 0x77:
+			// TODO: Implement the MMU.
+			break;
+		case 0x78:
+			LD_r_reg(mid, low);
+			break;
+		case 0x79:
+			LD_r_reg(mid, low);
+			break;
+		case 0x7A:
+			LD_r_reg(mid, low);
+			break;
+		case 0x7B:
+			LD_r_reg(mid, low);
+			break;
+		case 0x7C:
+			LD_r_reg(mid, low);
+			break;
+		case 0x7D:
+			LD_r_reg(mid, low);
+			break;
+		case 0x7E:
+			// TODO: Implement the MMU.
+			break;
+		case 0x7F:
+			LD_r_reg(mid, low);
+			break;
+
+
+
+
+		default: break; // TODO: Implement error handling.
+	}
+
+
 }
 
-void CPU::LD_r_reg(const WORD &opcode) {
-	const BYTE r = (opcode >> 3) & 0b111;
-	const BYTE rp = opcode & 0b111;
-
-	storeByCode(r, rp);
-}
-
-void CPU::LD_r_imm(const WORD &opcode) {
-	BYTE dest = (opcode >> 3) & 0b111;
-	BYTE imm = opcode & 0b111;
-
-	storeImmediate(dest, imm);
+void CPU::LD_r_reg(const BYTE dest, const BYTE source) {
+	storeByCode(dest, source);
 }
 
 
-void CPU::storeByCode(const BYTE& dest, const BYTE& source) {
+void CPU::storeByCode(const BYTE dest, const BYTE source) {
 	BYTE value;
 
 	// set source r'
@@ -71,9 +258,11 @@ void CPU::storeByCode(const BYTE& dest, const BYTE& source) {
 		case 0:
 			value = c_B;
 			break;
-		case 1: value = c_C;
+		case 1:
+			value = c_C;
 			break;
-		case 2: value = c_D;
+		case 2:
+			value = c_D;
 			break;
 		case 3:
 			value = c_E;
@@ -87,7 +276,7 @@ void CPU::storeByCode(const BYTE& dest, const BYTE& source) {
 		case 7:
 			value = c_A;
 			break;
-		default: throw std::logic_error("code 6 is (HL), not a register ref");
+		default: return;
 	}
 
 	// set dest r to value
@@ -112,12 +301,13 @@ void CPU::storeByCode(const BYTE& dest, const BYTE& source) {
 			break;
 		case 7:
 			c_A = value;
+			break;
 
-		default: throw std::logic_error("code 6 is (HL), not a register ref");
+		default: break;
 	}
 }
 
-void CPU::storeImmediate(const BYTE &dest, const BYTE &imm) {
+void CPU::storeImmediate(const BYTE dest, const BYTE imm) {
 	switch (dest) {
 		case 0:
 			c_B = imm;
@@ -139,7 +329,8 @@ void CPU::storeImmediate(const BYTE &dest, const BYTE &imm) {
 			break;
 		case 7:
 			c_A = imm;
+			break;
 
-		default: throw std::logic_error("code 6 is (HL), not a register ref");
+		default: break;
 	}
 }
