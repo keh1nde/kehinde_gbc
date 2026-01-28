@@ -41,9 +41,11 @@ private:
 
 	// RAM
 	BYTE c_WorkRAM[0x4000];
+
 	// Helper Functions
 	void storeByCode(BYTE dest, BYTE source);
 	void storeImmediate(BYTE dest, BYTE imm);
+	void splitBinary(BYTE binary, BYTE dest_one, BYTE dest_two);
 
 	BYTE getNextOpcode();
 
@@ -54,6 +56,7 @@ private:
 	// a generic function?
 
 	void LD_r_reg(BYTE dest, BYTE source);
+	void LD_r_HL(BYTE H_dest, BYTE L_dest, BYTE val);
 
 	// 16-bit load instructions
 
