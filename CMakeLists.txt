@@ -4,5 +4,7 @@ project(kehindes_gameboycolor_emulator)
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(kehindes_gameboycolor_emulator main.cpp
-        GameBoyColor.h
-        GameBoyColor.cpp)
+        GBC_CPU.h
+        GBC_CPU.cpp
+        GBC_MMU.h
+        GBC_MMU.cpp)
