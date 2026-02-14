@@ -28,11 +28,11 @@
 class GBC_MMU {
 
 public:
-	BYTE read8(BYTE addr);
-	void write8(BYTE addr);
+	BYTE read8(WORD addr);
+	void write8(WORD addr);
 
-	BYTE read16(BYTE addr);
-	void write16(BYTE addr);
+	BYTE read16(WORD addr);
+	void write16(WORD addr);
 
 	/*
 	 * void tick(cycles);
