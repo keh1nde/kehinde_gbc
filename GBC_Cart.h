@@ -1,0 +1,13 @@
+//
+// Created by Kehinde Adeoso on 2/14/26.
+//
+
+#ifndef KEHINDES_GAMEBOYCOLOR_EMULATOR_GBC_CART_H
+#define KEHINDES_GAMEBOYCOLOR_EMULATOR_GBC_CART_H
+
+
+class GBC_Cart {
+};
+
+
+#endif //KEHINDES_GAMEBOYCOLOR_EMULATOR_GBC_CART_H
