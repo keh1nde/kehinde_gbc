@@ -65,7 +65,7 @@ void CPU::execute() {
 			LD_r_reg(mid, low);
 			break;
 		case 0x46:
-			// TODO: Implement the MMU.
+			LD_r_HL(mid); // HL_r op
 			break;
 		case 0x47:
 			LD_r_reg(mid, low);
@@ -89,7 +89,7 @@ void CPU::execute() {
 			LD_r_reg(mid, low);
 			break;
 		case 0x4E:
-			// TODO: Implement the MMU.
+			LD_r_HL(mid); // HL_r op
 			break;
 		case 0x4F:
 			LD_r_reg(mid, low);
@@ -113,7 +113,7 @@ void CPU::execute() {
 			LD_r_reg(mid, low);
 			break;
 		case 0x56:
-			// TODO: Implement the MMU.
+			LD_r_HL(mid); // HL_r op
 			break;
 		case 0x57:
 			LD_r_reg(mid, low);
@@ -137,7 +137,7 @@ void CPU::execute() {
 			LD_r_reg(mid, low);
 			break;
 		case 0x5E:
-			// TODO: Implement the MMU.
+			LD_r_HL(mid); // HL_r op
 			break;
 		case 0x5F:
 			LD_r_reg(mid, low);
@@ -161,7 +161,7 @@ void CPU::execute() {
 			LD_r_reg(mid, low);
 			break;
 		case 0x66:
-			// TODO: Implement the MMU.
+			LD_r_HL(mid); // HL_r op
 			break;
 		case 0x67:
 			LD_r_reg(mid, low);
@@ -185,31 +185,31 @@ void CPU::execute() {
 			LD_r_reg(mid, low);
 			break;
 		case 0x6E:
-			// TODO: Implement the MMU.
+			LD_r_HL(mid); // HL_r op
 			break;
 		case 0x6F:
 			LD_r_reg(mid, low);
 			break;
 		case 0x70:
-			// TODO: Implement the MMU
+			LD_HL_r(low); // HL_w op
 			break;
 		case 0x71:
-			// TODO: Implement the MMU.
+			LD_HL_r(low); // HL_w op
 			break;
 		case 0x73:
-			// TODO: Implement the MMU.
+			LD_HL_r(low); // HL_w op
 			break;
 		case 0x74:
-			// TODO: Implement the MMU.
+			LD_HL_r(low); // HL_w op
 			break;
 		case 0x75:
-			// TODO: Implement the MMU.
+			LD_HL_r(low); // HL_w op
 			break;
 		case 0x76:
 			// TODO: Implement HALT()
 			break;
 		case 0x77:
-			// TODO: Implement the MMU.
+			LD_HL_r(low); // HL_w op
 			break;
 		case 0x78:
 			LD_r_reg(mid, low);
@@ -230,7 +230,7 @@ void CPU::execute() {
 			LD_r_reg(mid, low);
 			break;
 		case 0x7E:
-			// TODO: Implement the MMU.
+			LD_r_HL(mid); // HL_r op
 			break;
 		case 0x7F:
 			LD_r_reg(mid, low);
@@ -247,14 +247,34 @@ void CPU::LD_r_reg(const BYTE dest, const BYTE source) {
 	storeByCode(dest, source);
 }
 
-void CPU::LD_r_HL(const BYTE H_dest, const BYTE L_dest, const BYTE val) {
+void CPU::LD_r_HL(BYTE dest) {
+	/*
 	const BYTE low_val = (val & 0xFF00);
 	const BYTE high_val = (val >> 8) & 0x00FF;
 
 	storeImmediate(H_dest, high_val);
 	storeImmediate(L_dest, low_val);
+	*/
+
+ // Combine low and hi bits
+
+	const BYTE high = c_H;
+	const BYTE low  = c_L;
+
+	WORD combined = ((WORD)high << 8) | low;
+
+	// TODO: Figure out component interplay
+	// storeImmediate(dest, GBC_MMU.read8(combined));
 }
 
+void CPU::LD_HL_r(BYTE dest) const {
+	const BYTE high = c_H;
+	const BYTE low  = c_L;
+
+	WORD combined = ((WORD)high << 8) | low;
+	// TODO: Figure out component interplay
+	// mmu.write8(combined, source)
+}
 
 void CPU::storeByCode(const BYTE dest, const BYTE source) {
 	BYTE value;
