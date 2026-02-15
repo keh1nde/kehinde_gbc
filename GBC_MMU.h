@@ -5,6 +5,7 @@
 #ifndef KEHINDES_GAMEBOYCOLOR_EMULATOR_GB_MMU_H
 #define KEHINDES_GAMEBOYCOLOR_EMULATOR_GB_MMU_H
 #include "GBC_CPU.h"
+#include "GBC_Cart.h"
 
 
 /*
