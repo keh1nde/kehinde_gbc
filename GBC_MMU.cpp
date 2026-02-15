@@ -28,7 +28,8 @@ BYTE GBC_MMU::read8(WORD addr) {
 	// method.
 
 	if (addr < 0x8000) {
-		// TODO: Implement cartridge.read_rom(addr)
+		// TODO: Properly implement cartridge.read_rom(addr)
+		return read8(addr);
 	}
 	else if (addr < 0xA000) {
 		// TODO: Implement ppu.read_vram(addr)
