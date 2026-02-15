@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <string>
+#include "GBC_MMU.h"
 
 // Type Aliases
 using BYTE = uint8_t;
@@ -56,7 +57,8 @@ private:
 	// a generic function?
 
 	void LD_r_reg(BYTE dest, BYTE source);
-	void LD_r_HL(BYTE H_dest, BYTE L_dest, BYTE val);
+	void LD_r_HL(BYTE dest);
+	void LD_HL_r(BYTE dest) const;
 
 	// 16-bit load instructions
 
