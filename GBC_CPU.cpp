@@ -228,6 +228,51 @@ void CPU::execute() {
 		case 0x36:
 			LD_HL_n();
 			break;
+		case 0x0A:
+			LD_A_BC();
+			break;
+		case 0x1A:
+			LD_A_DE();
+			break;
+		case 0x02:
+			LD_BC_A();
+			break;
+		case 0x12:
+			LD_DE_A();
+			break;
+		case 0xFA:
+			LD_A_nn();
+			break;
+		case 0xEA:
+			LD_nn_A();
+			break;
+		case 0xF2:
+			LDH_A_C();
+			break;
+		case 0xE2:
+			LDH_C_A();
+			break;
+		case 0xF0:
+			LDH_A_n();
+			break;
+		case 0xE0:
+			LDH_n_A();
+			break;
+		case 0x3A:
+			LD_A_HLdec();
+			break;
+		case 0x32:
+			LD_HLdec_A();
+			break;
+		case 0x2A:
+			LD_A_HLinc();
+			break;
+		case 0x22:
+			LD_HLinc_A();
+			break;
+
+		// Begin 16-bit load instructions
+
 
 		default: break; // TODO: Implement error handling.
 	}
@@ -287,6 +332,10 @@ void CPU::LD_HL_n() {
 }
 
 void CPU::LD_A_BC() {
+	// TODO: Figure out component interplay.
+}
+
+void CPU::LD_A_DE() {
 	// TODO: Figure out component interplay.
 }
 
