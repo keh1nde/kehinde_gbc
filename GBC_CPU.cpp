@@ -5,7 +5,7 @@
 
 #include "GBC_CPU.h"
 
-CPU::CPU(const std::string& bootPath, const std::string &cartPath)
+CPU::CPU(const std::string& bootPath)
 : c_ProgramCounter(0x0000), c_StackPointer(0xFFFE), c_WorkRAM(0x0000), c_A(0x11), c_B(0x00), c_C(0x00), c_D(0x00),
 c_E(0x00), c_F(0x00), c_H(0x00), c_L(0x00){
 	// Load BootROM.
@@ -16,16 +16,6 @@ c_E(0x00), c_F(0x00), c_H(0x00), c_L(0x00){
 	}
 
 	fclose(file);
-
-	// Load Cartridge.
-	file = fopen(cartPath.c_str(), "rb");
-	int c_pos = 0x0100;
-	while (fread(&c_WorkRAM[c_pos], 1, 1, file)) {
-		c_pos++;
-	}
-	fclose(file);
-	// Set program counter to start at 0x0000, stack pointer at 0xFFFE
-	// Done above.
 }
 
 BYTE CPU::getNextOpcode() {
@@ -235,7 +225,9 @@ void CPU::execute() {
 		case 0x7F:
 			LD_r_reg(mid, low);
 			break;
-
+		case 0x36:
+			LD_HL_n();
+			break;
 
 		default: break; // TODO: Implement error handling.
 	}
@@ -245,6 +237,11 @@ void CPU::execute() {
 
 void CPU::LD_r_reg(const BYTE dest, const BYTE source) {
 	storeByCode(dest, source);
+}
+
+void CPU::LD_r_n(const BYTE dest) {
+	const int immediate = getNextOpcode();
+	storeByCode(dest, immediate);
 }
 
 void CPU::LD_r_HL(BYTE dest) {
@@ -263,18 +260,36 @@ void CPU::LD_r_HL(BYTE dest) {
 
 	WORD combined = ((WORD)high << 8) | low;
 
-	// TODO: Figure out component interplay
+	// TODO: Figure out component interplay.
 	// storeImmediate(dest, GBC_MMU.read8(combined));
 }
 
-void CPU::LD_HL_r(BYTE dest) const {
+void CPU::LD_HL_r(BYTE source) const {
 	const BYTE high = c_H;
 	const BYTE low  = c_L;
 
-	WORD combined = ((WORD)high << 8) | low;
-	// TODO: Figure out component interplay
+	WORD combined = ((WORD)high << 8) | low; // TODO: Verify this is the correct implementation
+	// TODO: Figure out component interplay.
 	// mmu.write8(combined, source)
 }
+
+
+void CPU::LD_HL_n() {
+	const BYTE high = c_H;
+	const BYTE low  = c_L;
+
+	WORD combined = ((WORD)high << 8) | low; // TODO: Verify this is the correct implementation
+
+	BYTE imm = getNextOpcode();
+
+	// TODO: Figure out component interplay.
+	// mmu.write8(combined, imm);
+}
+
+void CPU::LD_A_BC() {
+	// TODO: Figure out component interplay.
+}
+
 
 void CPU::storeByCode(const BYTE dest, const BYTE source) {
 	BYTE value;
