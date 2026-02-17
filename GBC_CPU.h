@@ -105,6 +105,34 @@ private:
 	void LD_HL_r(BYTE source) const;
 
 	/**
+	 * @brief LD A, (HL-): Load accumulator (indirect HL, decrement).
+	 * @post The accumulator register now holds the value located at the memory address in HL,
+	 * and the HL register pair is decremented by 1.
+	 */
+	void LD_A_HLdec();
+
+	/**
+	 * @brief LD (HL-), A: Load from accumulator (indirect HL, decrement).
+	 * @post The memory address pointed to by HL now holds the value in the accumulator register,
+	 * and the HL register pair is decremented by 1.
+	 */
+	void LD_HLdec_A();
+
+	/**
+	 * @brief LD A, (HL+): Load accumulator (indirect HL, increment).
+	 * @post The accumulator register now holds the value located at the memory address in HL,
+	 * and the HL register pair is incremented by 1.
+	 */
+	void LD_A_HLinc();
+
+	/**
+	 * @brief LD (HL+), A: Load from accumulator (indirect HL, increment).
+	 * @post The memory address pointed to by HL now holds the value in the accumulator register,
+	 * and the HL register pair is incremented by 1.
+	 */
+	void LD_HLinc_A();
+
+	/**
 	 * @brief LD (HL), n: Load from immediate data (indirect HL).
 	 * @post The memory address pointed to by HL now holds the immediate value n located at PC+1.
 	 */
@@ -112,12 +140,70 @@ private:
 
 	/**
 	 * @brief Load to the 8-bit A register, data from the absolute address specified by the 16-bit register BC.
-	 * @post Register A now holds the data located in the memory address held by BC.
+	 * @post The accumulator register now holds the data located in the memory address held by BC.
 	 */
 	void LD_A_BC();
 
-	// 16-bit load instructions
+	/**
+	 * @brief Load to the 8-bit A register, data from the absolute address specified by the 16-bit register DE.
+	 * @post The accumulator register now holds the data located in the memory address held by DE.
+	 */
+	void LD_A_DE();
 
+	/**
+	 * @brief Load to the absolute address specified by the 16-bit register BC, data from the 8-bit A register.
+	 * @post The value stored in the accumulator register is now held in the memory address in BC.
+	 */
+	void LD_BC_A();
 
+	/**
+	 * @brief Load to the absolute address specified by the 16-bit register DE, data from the 8-bit A register.
+	 * @post The value stored in the accumulator register is now held in the memory address in DE.
+	 */
+	void LD_DE_A();
+
+	/**
+	 * @brief Load to the 8-bit A register, data from the absolute address specified by the 16-bit operand nn.
+	 * @post The value stored in the memory address given as immediate is now stored in the accumulator register.
+	 */
+	void LD_A_nn();
+
+	/**
+	 * @brief Load to the absolute address specified by the 16-bit operand nn, data from the 8-bit A register.
+	 * @post The value stored in the accumulator register is now stored in the memory address given as immediate.
+	 */
+	void LD_nn_A();
+
+	/**
+	* @brief Load to the 8-bit A register, data from the address specified by the 8-bit C register.
+	* The full 16-bit absolute address is obtained by setting the most significant byte to 0xFF and
+	* the least significant byte to the value of C, so the possible range is `0xFF00-0xFFFF`.
+	* @post The accumulator register now holds data from a memory address 0xFF + C.
+	*/
+	void LDH_A_C();
+
+	/**
+	* @brief Load to the address specified by the 8-bit C register, data from the 8-bit A register. The full
+	* 16-bit absolute address is obtained by setting the most significant byte to 0xFF and the least
+	* significant byte to the value of C, so the possible range is 0xFF00-0xFFFF.
+	* @post The C register now holds data from a memory address 0xFF + A.
+	 */
+	void LDH_C_A();
+
+	/**
+	* @brief Load to the 8-bit A register, data from the address specified by the 8-bit immediate data n. The
+	* full 16-bit absolute address is obtained by setting the most significant byte to 0xFF and the
+	* least significant byte to the value of n, so the possible range is 0xFF00-0xFFFF.
+	* @post The C register now holds data from a memory address 0xFF + N
+	*/
+	void LDH_A_n();
+
+	/**
+	* @brief Load to the address specified by the 8-bit immediate data n, data from the 8-bit A register. The
+	* full 16-bit absolute address is obtained by setting the most significant byte to 0xFF and the
+	* least significant byte to the value of n, so the possible range is 0xFF00-0xFFFF.
+	* @post The memory address given as immediate now holds data from the accumulator register.
+	*/
+	void LDH_n_A();
 
 };
