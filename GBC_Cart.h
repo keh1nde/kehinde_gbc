@@ -17,7 +17,15 @@
 #pragma once
 #include "GBC_CPU.h"
 
-
+/*
+ * For the Cart constructor:
+* file = fopen(cartPath.c_str(), "rb");
+	int c_pos = 0x0100;
+	while (fread(&c_WorkRAM[c_pos], 1, 1, file)) {
+		c_pos++;
+	}
+	fclose(file);
+ */
 class GBC_Cart {
 public:
 	// Initializers
