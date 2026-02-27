@@ -2,7 +2,7 @@
 // Created by Kehinde Adeoso on 1/27/26.
 //
 
-#include "GBC_MMU.h"
+#include "GBC_BUS.h"
 
 /*
  * Address banking:
@@ -22,7 +22,7 @@
  * 0xFFFF: IE (interrupt enable)
  */
 
-BYTE GBC_MMU::read8(WORD addr) {
+BYTE GBC_BUS::read8(WORD addr) {
 	// This method must evaluate the 16 bit addr given as input and check it against the previous bounds.
 	// If the address is within a certain bound, then we either read directly or call the device's read
 	// method.
@@ -57,7 +57,7 @@ BYTE GBC_MMU::read8(WORD addr) {
 	}
 }
 
-void GBC_MMU::write8(WORD addr) {
+void GBC_BUS::write8(WORD addr) {
 	if (addr < 0x8000) {
 		// TODO: Implement cartridge.write_rom(addr)
 	}
