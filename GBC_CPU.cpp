@@ -5,7 +5,7 @@
 
 #include "GBC_CPU.h"
 
-CPU::CPU(const std::string& bootPath)
+GBC_CPU::GBC_CPU(const std::string& bootPath)
 : c_ProgramCounter(0x0000), c_StackPointer(0xFFFE), c_WorkRAM(0x0000), c_A(0x11), c_B(0x00), c_C(0x00), c_D(0x00),
 c_E(0x00), c_F(0x00), c_H(0x00), c_L(0x00){
 	// Load BootROM.
@@ -18,13 +18,13 @@ c_E(0x00), c_F(0x00), c_H(0x00), c_L(0x00){
 	fclose(file);
 }
 
-BYTE CPU::getNextOpcode() {
+BYTE GBC_CPU::getNextOpcode() {
 	const BYTE next = c_WorkRAM[c_ProgramCounter];
 	c_ProgramCounter += 1;
 	return next;
 }
 
-void CPU::execute() {
+void GBC_CPU::execute() {
 	const BYTE opcode = getNextOpcode();
 
 	if (opcode == 0xCB) {
@@ -280,16 +280,16 @@ void CPU::execute() {
 
 }
 
-void CPU::LD_r_reg(const BYTE dest, const BYTE source) {
+void GBC_CPU::LD_r_reg(const BYTE dest, const BYTE source) {
 	storeByCode(dest, source);
 }
 
-void CPU::LD_r_n(const BYTE dest) {
+void GBC_CPU::LD_r_n(const BYTE dest) {
 	const int immediate = getNextOpcode();
 	storeByCode(dest, immediate);
 }
 
-void CPU::LD_r_HL(BYTE dest) {
+void GBC_CPU::LD_r_HL(BYTE dest) {
 	/*
 	const BYTE low_val = (val & 0xFF00);
 	const BYTE high_val = (val >> 8) & 0x00FF;
@@ -306,10 +306,10 @@ void CPU::LD_r_HL(BYTE dest) {
 	WORD combined = ((WORD)high << 8) | low;
 
 	// TODO: Figure out component interplay.
-	// storeImmediate(dest, GBC_MMU.read8(combined));
+	// storeImmediate(dest, GBC_BUS.read8(combined));
 }
 
-void CPU::LD_HL_r(BYTE source) const {
+void GBC_CPU::LD_HL_r(BYTE source) const {
 	const BYTE high = c_H;
 	const BYTE low  = c_L;
 
@@ -319,7 +319,7 @@ void CPU::LD_HL_r(BYTE source) const {
 }
 
 
-void CPU::LD_HL_n() {
+void GBC_CPU::LD_HL_n() {
 	const BYTE high = c_H;
 	const BYTE low  = c_L;
 
@@ -331,16 +331,16 @@ void CPU::LD_HL_n() {
 	// mmu.write8(combined, imm);
 }
 
-void CPU::LD_A_BC() {
+void GBC_CPU::LD_A_BC() {
 	// TODO: Figure out component interplay.
 }
 
-void CPU::LD_A_DE() {
+void GBC_CPU::LD_A_DE() {
 	// TODO: Figure out component interplay.
 }
 
 
-void CPU::storeByCode(const BYTE dest, const BYTE source) {
+void GBC_CPU::storeByCode(const BYTE dest, const BYTE source) {
 	BYTE value;
 
 	// set source r'
@@ -405,7 +405,7 @@ void CPU::storeByCode(const BYTE dest, const BYTE source) {
 
 
 // 0b10 000 110 4 + 2 + 0 = 6
-void CPU::storeImmediate(const BYTE dest, const BYTE imm) {
+void GBC_CPU::storeImmediate(const BYTE dest, const BYTE imm) {
 	switch (dest) {
 		case 0:
 			c_B = imm;
