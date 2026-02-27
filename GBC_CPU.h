@@ -6,24 +6,23 @@
 
 #include <cstdint>
 #include <string>
-#include "GBC_MMU.h"
+#include "GBC_BUS.h"
 
 // Type Aliases
-using BYTE = uint8_t;
-using WORD = uint16_t;
+
 
 constexpr int c_ZeroFlag      = 7;
 constexpr int c_SubtractFlag  = 6;
 constexpr int c_HalfCarryFlag = 5;
 constexpr int c_CarryFlag     = 4;
 
-class CPU {
+class GBC_CPU {
 	// Registers
 
 
 public:
 	// Class Methods
-	explicit CPU(const std::string& bootPath); // aka the initializer/reset.
+	explicit GBC_CPU(const std::string& bootPath); // aka the initializer/reset.
 	void execute();
 
 
@@ -41,7 +40,7 @@ private:
 	BYTE c_L;
 
 	// RAM
-	BYTE c_WorkRAM[0x4000];
+
 
 	// Helper Functions
 	/**
