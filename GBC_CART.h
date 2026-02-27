@@ -26,10 +26,10 @@
 	}
 	fclose(file);
  */
-class GBC_Cart {
+class GBC_CART {
 public:
 	// Initializers
-	GBC_Cart(int c_CartridgeRAM, int c_CartridgeROM);
+	GBC_CART(int c_CartridgeRAM, int c_CartridgeROM);
 	BYTE read_rom(WORD addr) const;
 	void write_rom(WORD addr, BYTE input);
 
