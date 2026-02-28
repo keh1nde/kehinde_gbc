@@ -22,7 +22,7 @@ class GBC_CPU {
 
 public:
 	// Class Methods
-	explicit GBC_CPU(const std::string& bootPath); // aka the initializer/reset.
+	explicit GBC_CPU(const std::string& bootPath, GBC_BUS& bus); // aka the initializer/reset.
 	void execute();
 
 
@@ -40,6 +40,7 @@ private:
 	BYTE c_L;
 
 	// RAM
+	GBC_BUS bus_;
 
 
 	// Helper Functions
@@ -58,6 +59,8 @@ private:
 	 * @post The destination register now holds the immediate value.
 	 */
 	void storeImmediate(BYTE dest, BYTE imm);
+
+	BYTE getByCode(BYTE source);
 
 	/*
 	void splitBinary(BYTE binary, BYTE dest_one, BYTE dest_two);
@@ -101,7 +104,7 @@ private:
 	 * @param source The hex representation for the source register r.
 	 * @post The memory location pointed to by the address in HL now holds the value within the source register r.
 	 */
-	void LD_HL_r(BYTE source) const;
+	void LD_HL_r(BYTE source);
 
 	/**
 	 * @brief LD A, (HL-): Load accumulator (indirect HL, decrement).
