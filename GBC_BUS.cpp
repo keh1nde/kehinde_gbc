@@ -4,6 +4,18 @@
 
 #include "GBC_BUS.h"
 
+GBC_BUS::GBC_BUS(const std::string &bootPath, GBC_CART &cart, GBC_PPU& ppu) : cart_(cart),  ppu_(ppu) {
+	// Load BootROM.
+	FILE* file = fopen(bootPath.c_str(),"rb");
+	int b_pos = 0x0000;
+	while (fread(&mmu_WorkRAM_[b_pos], 1, 1, file)) {
+		b_pos++;
+	}
+
+	fclose(file);
+}
+
+
 /*
  * Address banking:
  * 0x0000–0x3FFF: Cartridge ROM bank 0 (if boot ROM enabled and addr < 0x0100 (DMG): return boot ROM byte)
