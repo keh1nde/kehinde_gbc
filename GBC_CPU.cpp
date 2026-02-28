@@ -290,32 +290,21 @@ void GBC_CPU::LD_r_n(const BYTE dest) {
 }
 
 void GBC_CPU::LD_r_HL(BYTE dest) {
-	/*
-	const BYTE low_val = (val & 0xFF00);
-	const BYTE high_val = (val >> 8) & 0x00FF;
-
-	storeImmediate(H_dest, high_val);
-	storeImmediate(L_dest, low_val);
-	*/
-
- // Combine low and hi bits
-
 	const BYTE high = c_H;
-	const BYTE low  = c_L;
+	const BYTE low = c_L;
 
-	WORD combined = ((WORD)high << 8) | low;
-
-	// TODO: Figure out component interplay.
-	// storeImmediate(dest, GBC_BUS.read8(combined));
+	const WORD address = (high << 8) | low;
+	storeImmediate(dest, bus_.read8(address));
 }
 
-void GBC_CPU::LD_HL_r(BYTE source) const {
+void GBC_CPU::LD_HL_r(const BYTE source) {
 	const BYTE high = c_H;
 	const BYTE low  = c_L;
 
-	WORD combined = ((WORD)high << 8) | low; // TODO: Verify this is the correct implementation
-	// TODO: Figure out component interplay.
-	// mmu.write8(combined, source)
+	const WORD address = (high << 8) | low;
+
+	bus_.write8(address, getByCode(source));
+
 }
 
 
@@ -323,22 +312,131 @@ void GBC_CPU::LD_HL_n() {
 	const BYTE high = c_H;
 	const BYTE low  = c_L;
 
-	WORD combined = ((WORD)high << 8) | low; // TODO: Verify this is the correct implementation
+	const WORD address = (high << 8) | low; // TODO: Verify this is the correct implementation
+	const BYTE imm = getNextOpcode();
 
-	BYTE imm = getNextOpcode();
-
-	// TODO: Figure out component interplay.
-	// mmu.write8(combined, imm);
+	bus_.write8(address, imm);
 }
 
 void GBC_CPU::LD_A_BC() {
-	// TODO: Figure out component interplay.
+	const BYTE high = c_B;
+	const BYTE low  = c_C;
+	const WORD address = (high << 8) | low;
+
+	c_A = bus_.read8(address);
 }
 
 void GBC_CPU::LD_A_DE() {
-	// TODO: Figure out component interplay.
+	const BYTE high = c_D;
+	const BYTE low  = c_E;
+	const WORD address = (high << 8) | low;
+
+	c_A = bus_.read8(address);
 }
 
+void GBC_CPU::LD_BC_A() {
+	const BYTE high = c_B;
+	const BYTE low = c_C;
+	const WORD address = (high << 8) | low;
+
+	bus_.write8(address, c_A);
+}
+
+void GBC_CPU::LD_DE_A() {
+	const BYTE high = c_D;
+	const BYTE low = c_E;
+	const WORD address = (high << 8) | low;
+
+	bus_.write8(address, c_A);
+}
+
+void GBC_CPU::LD_A_nn() {
+	const BYTE high = getNextOpcode();
+	const BYTE low = getNextOpcode();
+	const WORD immediate = (high << 8) | low;
+
+	c_A = bus_.read8(immediate);
+}
+
+void GBC_CPU::LD_nn_A() {
+	const BYTE high = getNextOpcode();
+	const BYTE low = getNextOpcode();
+	const WORD address = (high << 8) | low;
+
+	bus_.write8(address, c_A);
+}
+
+void GBC_CPU::LDH_A_C() {
+	constexpr BYTE high = 0xFF;
+	const BYTE low = c_C;
+	const WORD address = (high << 8) | low;
+
+	c_A = bus_.read8(address);
+}
+
+void GBC_CPU::LDH_C_A() {
+	constexpr BYTE high = 0xFF;
+	const BYTE low = c_C;
+	const WORD address = (high << 8) | low;
+
+	bus_.write8(address, c_A);
+}
+
+void GBC_CPU::LDH_A_n() {
+	constexpr BYTE high = 0xFF;
+	const BYTE low = getNextOpcode();
+	const WORD address = (high << 8) | low;
+
+	c_A = bus_.read8(address);
+}
+
+void GBC_CPU::LDH_n_A() {
+	constexpr BYTE high = 0xFF;
+	const BYTE low = getNextOpcode();
+	const WORD address = (high << 8) | low;
+
+	bus_.write8(address, c_A);
+}
+
+void GBC_CPU::LD_A_HLdec() {
+	const BYTE high = c_H;
+	const BYTE low = c_L;
+	const WORD address = (high << 8) | low;
+
+	c_A = bus_.read8(address);
+
+ // TODO: Decrement the address, then split result into c_H and c_L
+}
+
+void GBC_CPU::LD_HLdec_A() {
+	const BYTE high = c_H;
+	const BYTE low = c_L;
+	const WORD address = (high << 8) | low;
+
+	bus_.write8(address, c_A);
+
+	// TODO: Decrement the address, then split result into c_H and c_L
+}
+
+void GBC_CPU::LD_A_HLinc() {
+	const BYTE high = c_H;
+	const BYTE low = c_L;
+	const WORD address = (high << 8) | low;
+
+	c_A = bus_.read8(address);
+
+	// TODO: Increment the address, then split result into c_H and c_L
+}
+
+void GBC_CPU::LD_HLinc_A() {
+	const BYTE high = c_H;
+	const BYTE low = c_L;
+	const WORD address = (high << 8) | low;
+
+	bus_.write8(address, c_A);
+
+	// TODO: Increment the address, then split result into c_H and c_L
+}
 
 void GBC_CPU::storeByCode(const BYTE dest, const BYTE source) {
 	BYTE value;
@@ -433,6 +531,35 @@ void GBC_CPU::storeImmediate(const BYTE dest, const BYTE imm) {
 			break;
 
 		default: break;
+	}
+}
+
+BYTE GBC_CPU::getByCode(const BYTE source) {
+	switch (source) {
+		case 0:
+			return c_B;
+		case 1:
+			return c_C;
+			break;
+		case 2:
+			return c_D;
+			break;
+		case 3:
+			return c_E;
+			break;
+		case 4:
+			return c_H;
+			break;
+		case 5:
+			return c_L;
+			break;
+		case 6:
+			return c_H;
+			break;
+		case 7:
+			return c_A;
+			break;
+		default: // Throw an error
 	}
 }
 
