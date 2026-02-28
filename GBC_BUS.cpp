@@ -22,7 +22,7 @@
  * 0xFFFF: IE (interrupt enable)
  */
 
-BYTE GBC_BUS::read8(WORD addr) {
+BYTE GBC_BUS::read8(const WORD addr) {
 	// This method must evaluate the 16 bit addr given as input and check it against the previous bounds.
 	// If the address is within a certain bound, then we either read directly or call the device's read
 	// method.
@@ -35,7 +35,7 @@ BYTE GBC_BUS::read8(WORD addr) {
 		// TODO: Implement ppu.read_vram(addr)
 	}
 	else if (addr < 0xC000) {
-		// TODO: Figure out c_WorkRAM implementation
+		return mmu_WorkRAM_[addr];
 	}
 	else if (addr < 0xE000) {
 		// Echo RAM mirror, not directly accessible
@@ -48,16 +48,18 @@ BYTE GBC_BUS::read8(WORD addr) {
 	}
 	else if (addr < 0xFF80) {
 		// TODO: Implement read_io(addr)
+		return read_io(addr);
 	}
 	else if (addr < 0xFFFF) {
 		// TODO: Implement hram[addr] access
+		return read_hram(addr);
 	}
 	else {
 		// TODO: Implement interrupts
 	}
 }
 
-void GBC_BUS::write8(WORD addr) {
+void GBC_BUS::write8(const WORD addr, const BYTE val) {
 	if (addr < 0x8000) {
 		// TODO: Implement cartridge.write_rom(addr)
 	}
@@ -78,6 +80,7 @@ void GBC_BUS::write8(WORD addr) {
 	}
 	else if (addr < 0xFF80) {
 		// TODO: Implement write_io(addr)
+		write_io(addr, val);
 	}
 	else if (addr < 0xFFFF) {
 		// TODO: Implement hram[addr] access
