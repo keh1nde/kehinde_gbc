@@ -57,7 +57,7 @@ public:
 		BYTE key1 = 0;
 	};
 
-	GBC_BUS(GBC_CART& cart); // Include all other components later.
+	GBC_BUS(const std::string& bootPath, GBC_CART& cart, GBC_PPU& ppu); // Include all other components later.
 
 	BYTE read8(WORD addr) override;
 	void write8(WORD addr, BYTE val) override;
