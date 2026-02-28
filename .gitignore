@@ -1,0 +1,119 @@
+# Compiled object files
+*.o
+*.obj
+
+# Precompiled headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared libraries
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# CMake
+build/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# Make
+Makefile.in
+
+# Autotools
+.deps/
+.dirstamp
+
+# Ninja
+.ninja_deps
+.ninja_log
+
+# Conan (package manager)
+conan.lock
+conanbuildinfo.*
+conaninfo.txt
+graph_info.json
+
+# vcpkg
+vcpkg_installed/
+
+# IDE - Visual Studio
+.vs/
+*.ncb
+*.sdf
+*.suo
+*.user
+*.userosscache
+*.sln.docview
+ipch/
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+x64/
+x86/
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+
+# IDE - CLion / JetBrains
+.idea/
+*.iml
+cmake-build-debug/
+cmake-build-release/
+
+# IDE - VS Code
+.vscode/
+*.code-workspace
+
+# IDE - Eclipse
+.cproject
+.project
+.settings/
+
+# IDE - Xcode
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+
+# Testing
+Testing/
+CTestCostData.txt
+
+# Profiling
+gmon.out
+perf.data
+perf.data.old
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
