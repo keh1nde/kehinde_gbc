@@ -6,6 +6,7 @@
 #define KEHINDES_GAMEBOYCOLOR_EMULATOR_GB_MMU_H
 #include "GBC_CPU.h"
 #include "GBC_CART.h"
+#include "GBC_PPU.h"
 #include <array>
 
 
@@ -28,8 +29,10 @@
  */
 
 #include "GBC_CPU.h"
+
 using BYTE = uint8_t;
 using WORD = uint16_t;
+using DWORD = uint32_t;
 
 enum class Interrupt : BYTE {VBlank, LCDStat, Timer, Serial, Joypad};
 
@@ -71,6 +74,7 @@ public:
 
 private:
 	GBC_CART& cart_;
+	GBC_PPU& ppu_;
 	// TODO: Include all other components later.
 
 	// ---- Memory objects ----:
