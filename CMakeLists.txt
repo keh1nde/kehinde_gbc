@@ -9,4 +9,6 @@ add_executable(kehindes_gameboycolor_emulator main.cpp
         GBC_BUS.h
         GBC_BUS.cpp
         GBC_CART.h
-        GBC_CART.cpp)
+        GBC_CART.cpp
+        GBC_PPU.h
+        GBC_PPU.cpp)
