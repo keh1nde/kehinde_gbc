@@ -61,7 +61,6 @@ public:
 
 	WORD read16(WORD addr) override;
 	void write16(WORD addr, WORD val) override;
-
 	void tick(int cycles);
 
 	void request_interrupt(Interrupt which);
@@ -71,7 +70,6 @@ public:
 	const CgbState& cgb() const;
 
 private:
-
 	GBC_CART& cart_;
 	// TODO: Include all other components later.
 
