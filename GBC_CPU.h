@@ -9,8 +9,6 @@
 #include "GBC_BUS.h"
 
 // Type Aliases
-
-
 constexpr int c_ZeroFlag      = 7;
 constexpr int c_SubtractFlag  = 6;
 constexpr int c_HalfCarryFlag = 5;
@@ -22,7 +20,7 @@ class GBC_CPU {
 
 public:
 	// Class Methods
-	explicit GBC_CPU(const std::string& bootPath, GBC_BUS& bus); // aka the initializer/reset.
+	explicit GBC_CPU(const GBC_BUS& bus); // aka the initializer/reset.
 	void execute();
 
 
@@ -207,5 +205,47 @@ private:
 	* @post The memory address given as immediate now holds data from the accumulator register.
 	*/
 	void LDH_n_A();
+
+	// 16-bit load instructions
+
+	/**
+	 * @brief LD rr, nn: Load 16-bit immediate data into register pair.
+	 * @param rr The hex representation for the destination register pair.
+	 * @post The register pair rr now holds the 16-bit immediate value nn fetched from PC+1 and PC+2.
+	 */
+	void LD_rr_nn(BYTE rr);
+
+	/**
+	 * @brief LD (nn), SP: Load from stack pointer to immediate address.
+	 * @post The two memory addresses beginning at the 16-bit immediate nn now hold the lower and upper bytes of the stack pointer.
+	 */
+	void LD_nn_SP();
+
+	/**
+	 * @brief LD SP, HL: Load stack pointer from HL.
+	 * @post The stack pointer now holds the value in the HL register pair.
+	 */
+	void LD_SP_HL();
+
+	/**
+	 * @brief PUSH rr: Push register pair onto stack.
+	 * @param rr The hex representation for the source register pair.
+	 * @post The value of register pair rr is written to the stack at the address pointed to by SP, and SP is decremented by 2.
+	 */
+	void PUSH_rr(BYTE rr);
+
+	/**
+	 * @brief POP rr: Pop from stack into register pair.
+	 * @param rr The hex representation for the destination register pair.
+	 * @post The register pair rr now holds the 16-bit value read from the top of the stack, and SP is incremented by 2.
+	 */
+	void POP_rr(BYTE rr);
+
+	/**
+	 * @brief LD HL, SP+e: Load HL from adjusted stack pointer.
+	 * @post The HL register pair now holds the value of SP plus the signed 8-bit immediate offset e,
+	 * the half-carry and carry flags are set based on the addition, and the zero and subtract flags are reset.
+	 */
+	void LD_HL_SPe();
 
 };
