@@ -73,7 +73,7 @@ public:
 	const CgbState& cgb() const;
 
 private:
-	GBC_CART& cart_;
+	GBC_CART& cart_; 
 	GBC_PPU& ppu_;
 	// TODO: Include all other components later.
 
