@@ -5,22 +5,14 @@
 
 #include "GBC_CPU.h"
 
-GBC_CPU::GBC_CPU(const std::string& bootPath)
-: c_ProgramCounter(0x0000), c_StackPointer(0xFFFE), c_WorkRAM(0x0000), c_A(0x11), c_B(0x00), c_C(0x00), c_D(0x00),
-c_E(0x00), c_F(0x00), c_H(0x00), c_L(0x00){
-	// Load BootROM.
-	FILE* file = fopen(bootPath.c_str(),"rb");
-	int b_pos = 0x0000;
-	while (fread(&c_WorkRAM[b_pos], 1, 1, file)) {
-		b_pos++;
-	}
-
-	fclose(file);
-}
+GBC_CPU::GBC_CPU(const GBC_BUS& bus)
+: c_ProgramCounter(0x0000), c_StackPointer(0xFFFE), c_A(0x11), c_B(0x00), c_C(0x00), c_D(0x00),
+c_E(0x00), c_H(0x00), c_F(0x00), c_L(0x00), bus_(bus) {}
 
 BYTE GBC_CPU::getNextOpcode() {
-	const BYTE next = c_WorkRAM[c_ProgramCounter];
-	c_ProgramCounter += 1;
+	const BYTE next = bus_.read8(c_ProgramCounter);
+	c_ProgramCounter++;
+
 	return next;
 }
 
@@ -399,44 +391,68 @@ void GBC_CPU::LDH_n_A() {
 }
 
 void GBC_CPU::LD_A_HLdec() {
-	const BYTE high = c_H;
-	const BYTE low = c_L;
-	const WORD address = (high << 8) | low;
+	BYTE high = c_H;
+	BYTE low = c_L;
+	WORD address = (high << 8) | low;
 
 	c_A = bus_.read8(address);
 
- // TODO: Decrement the address, then split result into c_H and c_L
+	address--;
+	high = address & 0xFF;
+	low = address >> 8;
+
+	c_H = high;
+	c_L = low;
+
 }
 
 void GBC_CPU::LD_HLdec_A() {
-	const BYTE high = c_H;
-	const BYTE low = c_L;
-	const WORD address = (high << 8) | low;
+	BYTE high = c_H;
+	BYTE low = c_L;
+	WORD address = (high << 8) | low;
 
 	bus_.write8(address, c_A);
 
-	// TODO: Decrement the address, then split result into c_H and c_L
+	address--;
+	high = address & 0xFF;
+	low = address >> 8;
+
+	c_H = high;
+	c_L = low;
 }
 
 void GBC_CPU::LD_A_HLinc() {
-	const BYTE high = c_H;
-	const BYTE low = c_L;
-	const WORD address = (high << 8) | low;
+	BYTE high = c_H;
+	BYTE low = c_L;
+	WORD address = (high << 8) | low;
 
 	c_A = bus_.read8(address);
 
-	// TODO: Increment the address, then split result into c_H and c_L
+
+	address++;
+	high = address & 0xFF;
+	low = address >> 8;
+
+	c_H = high;
+	c_L = low;
 }
 
 void GBC_CPU::LD_HLinc_A() {
-	const BYTE high = c_H;
-	const BYTE low = c_L;
-	const WORD address = (high << 8) | low;
+	BYTE high = c_H;
+	BYTE low = c_L;
+	WORD address = (high << 8) | low;
 
 	bus_.write8(address, c_A);
 
-	// TODO: Increment the address, then split result into c_H and c_L
+	address++;
+	high = address & 0xFF;
+	low = address >> 8;
+
+	c_H = high;
+	c_L = low;
 }
+
+
 
 void GBC_CPU::storeByCode(const BYTE dest, const BYTE source) {
 	BYTE value;
@@ -540,25 +556,18 @@ BYTE GBC_CPU::getByCode(const BYTE source) {
 			return c_B;
 		case 1:
 			return c_C;
-			break;
 		case 2:
 			return c_D;
-			break;
 		case 3:
 			return c_E;
-			break;
 		case 4:
 			return c_H;
-			break;
 		case 5:
 			return c_L;
-			break;
 		case 6:
 			return c_H;
-			break;
 		case 7:
 			return c_A;
-			break;
 		default: // Throw an error
 	}
 }
