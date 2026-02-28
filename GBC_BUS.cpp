@@ -28,11 +28,12 @@ BYTE GBC_BUS::read8(const WORD addr) {
 	// method.
 
 	if (addr < 0x8000) {
-		// TODO: Properly implement cartridge.read_rom(addr)
-		return read8(addr);
+		//Properly implement cartridge.read_rom(addr)
+		return ppu_.read(addr);
 	}
 	else if (addr < 0xA000) {
-		// TODO: Implement ppu.read_vram(addr)
+		// Implement ppu.read_vram(addr)
+		return ppu_.read(addr);
 	}
 	else if (addr < 0xC000) {
 		return mmu_WorkRAM_[addr];
@@ -41,17 +42,18 @@ BYTE GBC_BUS::read8(const WORD addr) {
 		// Echo RAM mirror, not directly accessible
 	}
 	else if (addr < 0xFEA0) {
-		// TODO: Implement ppu.read_oam(addr)
+		// Implement ppu.read_oam(addr)
+		return ppu_.read(addr);
 	}
 	else if (addr < 0xFF00) {
-		// TODO: Implement exception
+		// Implement exception
 	}
 	else if (addr < 0xFF80) {
-		// TODO: Implement read_io(addr)
+		// Implement read_io(addr)
 		return read_io(addr);
 	}
 	else if (addr < 0xFFFF) {
-		// TODO: Implement hram[addr] access
+		// Implement hram[addr] access
 		return read_hram(addr);
 	}
 	else {
@@ -61,29 +63,34 @@ BYTE GBC_BUS::read8(const WORD addr) {
 
 void GBC_BUS::write8(const WORD addr, const BYTE val) {
 	if (addr < 0x8000) {
-		// TODO: Implement cartridge.write_rom(addr)
+		// Implement cartridge.write_ram(addr)
+		ppu_.write(addr);
 	}
 	else if (addr < 0xA000) {
-		// TODO: Implement ppu.write_vram(addr)
+		// Implement ppu.write_vram(addr)
+		ppu_.write(addr);
 	}
 	else if (addr < 0xC000) {
-		// TODO: Figure out c_WorkRAM implementation
+		// TODO: Figure out c_WorkRAM write implementation
+		mmu_WorkRAM_[addr] = val;
 	}
 	else if (addr < 0xE000) {
 		// Echo RAM mirror, not directly accessible
 	}
 	else if (addr < 0xFEA0) {
-		// TODO: Implement ppu.write_oam(addr)
+		// Implement ppu.write_oam(addr)
+		ppu_.write(addr, val);
 	}
 	else if (addr < 0xFF00) {
 		// TODO: Implement exception
 	}
 	else if (addr < 0xFF80) {
-		// TODO: Implement write_io(addr)
+		// Implement write_io(addr)
 		write_io(addr, val);
 	}
 	else if (addr < 0xFFFF) {
 		// TODO: Implement hram[addr] access
+		mmu_HighRAM_[addr] = val;
 	}
 	else {
 		// TODO: Implement interrupts
@@ -92,3 +99,17 @@ void GBC_BUS::write8(const WORD addr, const BYTE val) {
 
 
 // TODO: Extend implementation to read16 and write16
+
+WORD GBC_BUS::read16(const WORD addr) {
+		//Properly implement cartridge.read_rom(addr)
+		const BYTE lo = read8(addr);
+		const BYTE hi = read8(addr + 1);
+
+
+	return (hi << 8) | lo;
+}
+
+void GBC_BUS::write16(const WORD addr, const WORD val) {
+	write8(addr, val & 0xFF);
+	write8(addr + 1, val >> 8);
+}
