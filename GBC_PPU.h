@@ -28,6 +28,42 @@ constexpr int ppu_VBK = 0xFF4F; // VRAM Bank Select (0 or 1)
 
 
 class GBC_PPU {
+public:
+	WORD read(WORD addr);
+	void write(WORD addr, BYTE val);
+
+	GBC_PPU();
+
 private:
-	BYTE vram[2][0x2000];
+
+	BYTE ppu_VRAM[2][0x2000];
+	BYTE ppu_ORAM[0xA0];
+
+	BYTE bg_palette_ram[64];
+	BYTE obj_palette_ram[64];
+
+	// State Tracking
+	int cycles; // Dot clock counter. TODO: Timer schema still needed.
+	BYTE mode; // 0 = HBlank, 1 = VBlank, 2 = OAM Scan, 3 = Drawing
+	BYTE window_line; // Internal window line counter (NOT the same as LY)
+	bool frame_ready; // Signal to host that a frame is complete
+
+	DWORD framebuffer[160 * 144];
+
+	// Mode Handling
+	void tick_oam_scan();
+	void tick_drawing();
+	void tick_hblank();
+	void tick_vblank();
+
+	void render_scanline();
+	void render_bg_scanline();
+	void render_window_scanline();
+	void render_sprites_scanline();
+
+	// Helpers
+	void check_lyc();
+	void set_mode(BYTE mode);
+	BYTE get_title_data();
+
 };
