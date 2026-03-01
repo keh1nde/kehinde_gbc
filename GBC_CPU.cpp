@@ -452,6 +452,26 @@ void GBC_CPU::LD_HLinc_A() {
 	c_L = low;
 }
 
+// ———————— End 8-bit load instructions, begin 16-bit load instructions ————————
+
+void GBC_CPU::LD_rr_nn(const BYTE rr) {
+	const BYTE high = rr & 0xFF;
+	const BYTE low = rr >> 8;
+
+	const BYTE nn_lsb = bus_.read8(getNextOpcode());
+	const BYTE nn_msb = bus_.read8(getNextOpcode());
+
+	storeImmediate(high, nn_lsb);
+	storeImmediate(low, nn_msb);
+}
+
+void GBC_CPU::LD_nn_SP() {
+	const BYTE nn_lsb = getNextOpcode();
+	const BYTE nn_msb = getNextOpcode();
+	const WORD address = (nn_msb << 8) | nn_lsb;
+
+	bus_.write16(address, bus_.read16(c_StackPointer));
+}
 
 
 void GBC_CPU::storeByCode(const BYTE dest, const BYTE source) {
