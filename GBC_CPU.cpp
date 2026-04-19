@@ -770,11 +770,10 @@ void GBC_CPU::LD_HLinc_A() {
 // ———————— End 8-bit load instructions, begin 16-bit load instructions ————————
 
 void GBC_CPU::LD_rr_nn(const BYTE rr) {
-	const BYTE high = rr & 0xFF;
-	const BYTE low = rr >> 8;
+	const BYTE nn_lsb = getNextOpcode();
+	const BYTE nn_msb = getNextOpcode();
 
-	const BYTE nn_lsb = bus_.read8(getNextOpcode());
-	const BYTE nn_msb = bus_.read8(getNextOpcode());
+	const WORD imm = (nn_msb << 8) | nn_lsb;
 
 	storeImmediate(high, nn_lsb);
 	storeImmediate(low, nn_msb);
