@@ -614,4 +614,37 @@ private:
 	 */
 	void CCF();
 
+	// 16-bit arithmetic instructions
+
+	/**
+	 * @brief ADD HL, rr: Add to the 16-bit HL register pair, data from the 16-bit register pair rr (rp table: code 3 = SP).
+	 * @param rr The 2-bit pair code for the source register pair.
+	 * @post The HL register pair now holds the sum of its previous value and the value in the source register pair.
+	 * The subtract flag is reset, the half-carry flag is set on carry from bit 11, the carry flag is set on carry from bit 15,
+	 * and the zero flag is unchanged.
+	 */
+	void ADD_HL_rr(BYTE rr);
+
+	/**
+	 * @brief ADD SP, e: Add to the 16-bit stack pointer, the signed 8-bit immediate value e.
+	 * @post The stack pointer now holds the sum of its previous value and the signed 8-bit immediate e located at PC+1.
+	 * The zero and subtract flags are reset, and the half-carry and carry flags are set based on the low byte of SP plus e
+	 * (half-carry from bit 3, carry from bit 7).
+	 */
+	void ADD_SP_e();
+
+	/**
+	 * @brief INC rr: Increment the 16-bit register pair rr by 1 (rp table: code 3 = SP).
+	 * @param rr The 2-bit pair code for the destination register pair.
+	 * @post The destination register pair now holds its previous value plus 1. No flags are affected.
+	 */
+	void INC_rr(BYTE rr);
+
+	/**
+	 * @brief DEC rr: Decrement the 16-bit register pair rr by 1 (rp table: code 3 = SP).
+	 * @param rr The 2-bit pair code for the destination register pair.
+	 * @post The destination register pair now holds its previous value minus 1. No flags are affected.
+	 */
+	void DEC_rr(BYTE rr);
+
 };
