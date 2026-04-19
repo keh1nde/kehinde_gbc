@@ -783,7 +783,7 @@ void GBC_CPU::LD_nn_SP() {
 	const BYTE nn_msb = getNextOpcode();
 	const WORD address = (nn_msb << 8) | nn_lsb;
 
-	bus_.write16(address, bus_.read16(c_StackPointer));
+	bus_.write16(address, c_StackPointer);
 }
 
 void GBC_CPU::LD_SP_HL() {
