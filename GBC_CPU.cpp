@@ -1123,7 +1123,26 @@ void GBC_CPU::SCF() {
 	// Reset the half carry and subtract flags
 	c_F &= ~((1 << c_HalfCarryFlag) | (1 << c_SubtractFlag));
 
-void GBC_CPU::storeByCode(const BYTE dest, const BYTE source) {
+	c_F |= (1 << c_CarryFlag);
+}
+
+void GBC_CPU::DAA() {
+
+}
+
+void GBC_CPU::CPL() {
+	c_F ^= (1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag);
+
+	// Set Subtract and Half-Carry flags
+	c_F |= (1 << c_SubtractFlag);
+	c_F |= (1 << c_HalfCarryFlag);
+}
+// ———————— End 8-bit ADD instructions, begin [placeholder] instructions ————————
+
+
+// ———————— End [placeholder] instructions, begin helper functions ————————
+
+void GBC_CPU::storeByteByCode(const BYTE dest, const BYTE source) {
 	BYTE value;
 
 	// set source r'
