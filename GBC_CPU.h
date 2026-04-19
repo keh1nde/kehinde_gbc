@@ -198,7 +198,9 @@ private:
 	void LD_r_reg(BYTE dest, BYTE source);
 
 	/**
-	 *
+	 * @brief LD r, n: Load to the 8-bit register r, immediate data n.
+	 * @param dest The hex representation for the destination register r.
+	 * @post The destination register now holds the 8-bit immediate value n located at PC+1.
 	 */
 	void LD_r_n(BYTE dest);
 
