@@ -584,6 +584,46 @@ void GBC_CPU::execute() {
 		case 0x2F:
 			CPL();
 			break;
+		case 0x03:
+			INC_rr(c_PairBC);
+			break;
+		case 0x13:
+			INC_rr(c_PairDE);
+			break;
+		case 0x23:
+			INC_rr(c_PairHL);
+			break;
+		case 0x33:
+			INC_rr(c_PairSP);
+			break;
+		case 0x0B:
+			DEC_rr(c_PairBC);
+			break;
+		case 0x1B:
+			DEC_rr(c_PairDE);
+			break;
+		case 0x2B:
+			DEC_rr(c_PairHL);
+			break;
+		case 0x3B:
+			DEC_rr(c_PairSP);
+			break;
+		case 0x09:
+			ADD_HL_rr(c_PairBC);
+			break;
+		case 0x19:
+			ADD_HL_rr(c_PairDE);
+			break;
+		case 0x29:
+			ADD_HL_rr(c_PairHL);
+			break;
+		case 0x39:
+			ADD_HL_rr(c_PairSP);
+			break;
+		case 0xE8:
+			ADD_SP_e();
+			break;
+
 
 		default: break; // TODO: Implement error handling.
 	}
