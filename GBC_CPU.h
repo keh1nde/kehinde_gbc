@@ -74,7 +74,15 @@ private:
 	 * @param source Points to the source register.
 	 * @post The register pointed to by dest now holds information located at source.
 	 */
-	void storeByCode(BYTE dest, BYTE source);
+	void storeByteByCode(BYTE dest, BYTE source);
+
+	/**
+	 * @brief Stores information from the source register pair to the destination register pair.
+	 * @param dest Points to the destination register pair.
+	 * @param source Points to the source register pair.
+	 * @post The register pair pointed to by dest now holds information located at source.
+	 */
+	// void storeWordByCode(WORD dest, WORD source);
 
 	/**
 	 * @brief Stores immediate value within the destination register.
@@ -82,9 +90,87 @@ private:
 	 * @param imm The immediate value.
 	 * @post The destination register now holds the immediate value.
 	 */
-	void storeImmediate(BYTE dest, BYTE imm);
+	void storeImmediateByte(BYTE dest, BYTE imm);
 
-	BYTE getByCode(BYTE source);
+	/**
+	 * @brief Stores a 16-bit immediate value within the destination register pair.
+	 * @param dest The destination register pair.
+	 * @param imm The 16-bit immediate value.
+	 * @post The destination register pair now holds the immediate value.
+	 */
+	void storeImmediateWord(BYTE dest, WORD imm);
+
+	/**
+	 * @brief rp2-flavored variant of storeImmediateWord: code 3 routes to AF instead of SP.
+	 * @param dest The destination register pair (rp2 table).
+	 * @param imm The 16-bit immediate value.
+	 * @post The destination register pair now holds the immediate value. On AF writes the low nibble of F is masked to zero.
+	 */
+	void storeImmediateWordRP2(BYTE dest, WORD imm);
+
+	/**
+	 * @brief Retrieves the value held in the register specified by the given code.
+	 * @param source The hex representation for the source register.
+	 * @return The value stored within the source register.
+	 */
+	BYTE getByteByCode(BYTE source);
+
+	/**
+	 * @brief Retrieves the combined 16-bit value of the register pair specified by the given code (rp table: code 3 = SP).
+	 * @param code The 2-bit pair code.
+	 * @return The value stored within the register pair.
+	 */
+	WORD getPairByCode(BYTE code) const;
+
+	/**
+	 * @brief rp2-flavored variant of getPairByCode: code 3 returns AF instead of SP.
+	 * @param code The 2-bit pair code (rp2 table).
+	 * @return The value stored within the register pair.
+	 */
+	WORD getPairByCode2(BYTE code) const;
+
+	/**
+	 * @brief Shared body for ADD A, * instructions: adds source_val into the accumulator and updates flags.
+	 * @param source_val The operand (register, memory, or immediate) to add to A.
+	 * @post A holds A + source_val. Z is set if the result is zero, N is reset, H is set on carry from bit 3, and C is set on carry from bit 7.
+	 */
+	void generalAddInstruction(BYTE source_val);
+
+	/**
+	 * @brief Shared body for ADC A, * instructions: adds source_val plus the current carry flag into the accumulator and updates flags.
+	 * @param source_val The operand (register, memory, or immediate) to add to A along with the carry-in.
+	 * @post A holds A + source_val + carry-in. Z is set if the result is zero, N is reset, H is set on carry from bit 3 (including the carry-in), and C is set on carry from bit 7 (including the carry-in).
+	 */
+	void generalAdcInstruction(BYTE source_val);
+
+	/**
+	 * @brief Shared body for SUB * instructions: subtracts source_val from the accumulator and updates flags.
+	 * @param source_val The operand (register, memory, or immediate) to subtract from A.
+	 * @post A holds A - source_val. Z is set if the result is zero, N is set, H is set on borrow from bit 4, and C is set on borrow from bit 8.
+	 */
+	void generalSubInstruction(BYTE source_val);
+
+	/**
+	 * @brief Shared body for SBC A, * instructions: subtracts source_val plus the current carry flag from the accumulator and updates flags.
+	 * @param source_val The operand (register, memory, or immediate) to subtract from A along with the carry-in.
+	 * @post A holds A - source_val - carry-in. Z is set if the result is zero, N is set, H is set on borrow from bit 4 (including the carry-in), and C is set on borrow from bit 8 (including the carry-in).
+	 */
+	void generalSbcInstruction(BYTE source_val);
+
+	/**
+	 * @brief Shared body for CP * instructions: performs A - source_val purely to update flags, discarding the result.
+	 * @param source_val The operand (register, memory, or immediate) to compare against A.
+	 * @post A is unchanged. Z is set if A equals source_val, N is set, H is set on borrow from bit 4, and C is set on borrow from bit 8.
+	 */
+	void generalCprInstruction(BYTE source_val);
+
+	/**
+	 * @brief Shared body for INC * instructions: increments source_val by 1 and updates flags.
+	 * @param source_val The current value to increment; callers are responsible for writing the returned result back to the register or memory location.
+	 * @post Z is set if the incremented value is zero, N is reset, H is set on carry from bit 3, and C is unchanged.
+	 */
+	void generalIncInstruction(BYTE source_val);
+
 
 	/*
 	void splitBinary(BYTE binary, BYTE dest_one, BYTE dest_two);
