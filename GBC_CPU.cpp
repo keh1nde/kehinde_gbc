@@ -264,9 +264,324 @@ void GBC_CPU::execute() {
 		case 0x22:
 			LD_HLinc_A();
 			break;
-
-		// Begin 16-bit load instructions
-
+		case 0x01:
+			LD_rr_nn(c_PairBC);
+			break;
+		case 0x11:
+			LD_rr_nn(c_PairDE);
+			break;
+		case 0x21:
+			LD_rr_nn(c_PairHL);
+			break;
+		case 0x31:
+			LD_rr_nn(c_PairSP);
+			break;
+		case 0x08:
+			LD_nn_SP();
+			break;
+		case 0xF9:
+			LD_SP_HL();
+			break;
+		case 0xC5:
+			PUSH_rr(c_PairBC);
+			break;
+		case 0xD5:
+			PUSH_rr(c_PairDE);
+			break;
+		case 0xE5:
+			PUSH_rr(c_PairHL);
+			break;
+		case 0xF5:
+			// TODO: Implement AF as an entry inside store modification functions including read and write.
+			break;
+		case 0xC1:
+			POP_rr(c_PairBC);
+			break;
+		case 0xD1:
+			POP_rr(c_PairDE);
+			break;
+		case 0xE1:
+			POP_rr(c_PairHL);
+			break;
+		case 0xF1:
+			// TODO: Implement AF as an entry inside store modification functions including read and write.
+			break;
+		case 0xF8:
+			LD_HL_SPe();
+			break;
+		// The following are all ADD instructions:
+		case 0x80:
+			ADD_A_r(c_RegB);
+			break;
+		case 0x81:
+			ADD_A_r(c_RegC);
+			break;
+		case 0x82:
+			ADD_A_r(c_RegD);
+			break;
+		case 0x83:
+			ADD_A_r(c_RegE);
+			break;
+		case 0x84:
+			ADD_A_r(c_RegH);
+			break;
+		case 0x85:
+			ADD_A_r(c_RegL);
+			break;
+		case 0x86:
+			ADD_A_HL();
+			break;
+		case 0x87:
+			ADD_A_r(c_RegA);
+			break;
+		case 0xC6:
+			ADD_A_n();
+			break;
+		case 0x88:
+			ADC_A_r(c_RegB);
+			break;
+		case 0x89:
+			ADC_A_r(c_RegC);
+			break;
+		case 0x8A:
+			ADC_A_r(c_RegD);
+			break;
+		case 0x8B:
+			ADC_A_r(c_RegE);
+			break;
+		case 0x8C:
+			ADC_A_r(c_RegH);
+			break;
+		case 0x8D:
+			ADC_A_r(c_RegL);
+			break;
+		case 0x8E:
+			ADC_A_HL();
+			break;
+		case 0x8F:
+			ADC_A_r(c_RegA);
+			break;
+		case 0xCE:
+			ADC_A_n();
+			break;
+		case 0x90:
+			SUB_r(c_RegB);
+			break;
+		case 0x91:
+			SUB_r(c_RegC);
+			break;
+		case 0x92:
+			SUB_r(c_RegD);
+			break;
+		case 0x93:
+			SUB_r(c_RegE);
+			break;
+		case 0x94:
+			SUB_r(c_RegH);
+			break;
+		case 0x95:
+			SUB_r(c_RegL);
+			break;
+		case 0x96:
+			SUB_HL();
+			break;
+		case 0x97:
+			SBC_A_r(c_RegA);
+			break;
+		case 0x98:
+			SBC_A_r(c_RegB);
+			break;
+		case 0x99:
+			SBC_A_r(c_RegC);
+			break;
+		case 0x9A:
+			SBC_A_r(c_RegD);
+			break;
+		case 0x9B:
+			SBC_A_r(c_RegE);
+			break;
+		case 0x9C:
+			SBC_A_r(c_RegH);
+			break;
+		case 0x9D:
+			SBC_A_r(c_RegL);
+			break;
+		case 0x9E:
+			SBC_A_HL();
+			break;
+		case 0x9F:
+			SBC_A_r(c_RegA);
+			break;
+		case 0xDE:
+			SBC_A_n();
+			break;
+		case 0xB8:
+			CP_r(c_RegB);
+			break;
+		case 0xB9:
+			CP_r(c_RegC);
+			break;
+		case 0xBA:
+			CP_r(c_RegD);
+			break;
+		case 0xBB:
+			CP_r(c_RegE);
+			break;
+		case 0xBC:
+			CP_r(c_RegH);
+			break;
+		case 0xBD:
+			CP_r(c_RegL);
+			break;
+		case 0xBE:
+			CP_HL();
+			break;
+		case 0xBF:
+			CP_r(c_RegA);
+			break;
+		case 0xFE:
+			CP_n();
+			break;
+		case 0x04:
+			INC_r(c_RegB);
+			break;
+		case 0x14:
+			INC_r(c_RegD);
+			break;
+		case 0x24:
+			INC_r(c_RegH);
+			break;
+		case 0x34:
+			INC_HL();
+			break;
+		case 0x1C:
+			INC_r(c_RegE);
+			break;
+		case 0x2C:
+			INC_r(c_RegL);
+			break;
+		case 0x3C:
+			INC_r(c_RegA);
+			break;
+		case 0xC0:
+			INC_r(c_RegC);
+			break;
+		case 0x05:
+			DEC_r(c_RegB);
+			break;
+		case 0x15:
+			DEC_r(c_RegD);
+			break;
+		case 0x25:
+			DEC_r(c_RegH);
+			break;
+		case 0x35:
+			DEC_HL();
+			break;
+		case 0x0D:
+			DEC_r(c_RegC);
+			break;
+		case 0x1D:
+			DEC_r(c_RegE);
+			break;
+		case 0x2D:
+			DEC_r(c_RegL);
+			break;
+		case 0x3D:
+			DEC_r(c_RegA);
+			break;
+		case 0xA0:
+			AND_r(c_RegB);
+			break;
+		case 0xA1:
+			AND_r(c_RegC);
+			break;
+		case 0xA2:
+			AND_r(c_RegD);
+			break;
+		case 0xA3:
+			AND_r(c_RegE);
+			break;
+		case 0xA4:
+			AND_r(c_RegH);
+			break;
+		case 0xA5:
+			AND_r(c_RegL);
+		case 0xA6:
+			AND_HL();
+			break;
+		case 0xA7:
+			AND_r(c_RegA);
+			break;
+		case 0xE8:
+			AND_n();
+			break;
+		case 0xB0:
+			OR_r(c_RegB);
+			break;
+		case 0xB1:
+			OR_r(c_RegC);
+			break;
+		case 0xB2:
+			OR_r(c_RegD);
+			break;
+		case 0xB3:
+			OR_r(c_RegE);
+			break;
+		case 0xB4:
+			OR_r(c_RegH);
+			break;
+		case 0xB5:
+			OR_r(c_RegL);
+			break;
+		case 0xB6:
+			OR_HL();
+			break;
+		case 0xB7:
+			OR_r(c_RegA);
+			break;
+		case 0xF6:
+			OR_n();
+			break;
+		case 0xA8:
+			XOR_r(c_RegB);
+			break;
+		case 0xA9:
+			XOR_r(c_RegC);
+			break;
+		case 0xAA:
+			XOR_r(c_RegD);
+			break;
+		case 0xAB:
+			XOR_r(c_RegE);
+			break;
+		case 0xAC:
+			XOR_r(c_RegH);
+			break;
+		case 0xAD:
+			XOR_r(c_RegL);
+			break;
+		case 0xAE:
+			XOR_HL();
+			break;
+		case 0xAF:
+			XOR_r(c_RegA);
+			break;
+		case 0xEE:
+			XOR_n();
+			break;
+		case 0x3F:
+			CCF();
+			break;
+		case 0x37:
+			SCF();
+			break;
+		case 0x27:
+			DAA();
+			break;
+		case 0x2F:
+			CPL();
+			break;
 
 		default: break; // TODO: Implement error handling.
 	}
