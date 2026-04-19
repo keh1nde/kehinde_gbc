@@ -178,6 +178,8 @@ void GBC_CPU::execute() {
 		case 0x71:
 			LD_HL_r(low); // HL_w op
 			break;
+		case 0x72:
+			LD_HL_r(low);
 		case 0x73:
 			LD_HL_r(low); // HL_w op
 			break;
