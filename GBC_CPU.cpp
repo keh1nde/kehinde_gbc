@@ -515,7 +515,7 @@ void GBC_CPU::execute() {
 		case 0xA7:
 			AND_r(c_RegA);
 			break;
-		case 0xE8:
+		case 0xE6:
 			AND_n();
 			break;
 		case 0xB0:
