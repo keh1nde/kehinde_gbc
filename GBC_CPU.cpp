@@ -28,7 +28,7 @@ void GBC_CPU::execute() {
 	const BYTE mid = (opcode >> 3) & 0x7; // Middle 3 bits.
 	const BYTE low = opcode & 0x7; // Low 3 bits.
 
-	switch (opcode & 0xC0) {
+	switch (opcode) {
 		// Note that all opcodes 0x40 - 0x7F are register LD instructions,
 		// except 0x76 which is HALT. Some instructions fetch from memory which requires the MMU.
 		case 0x41:
