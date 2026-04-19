@@ -1125,7 +1125,38 @@ void GBC_CPU::SCF() {
 }
 
 void GBC_CPU::DAA() {
+	if (((c_F >> c_SubtractFlag) & 1) == 0) {
+		if ((c_F >> c_CarryFlag & 1) == 1|| c_A > 0x99) {
+			// Adjust
+			c_A += 0x60;
 
+			// Set c_CarryFlag to true
+			c_F |= (1 << c_CarryFlag);
+		}
+
+		if (((c_F >> c_HalfCarryFlag) & 1) == 1 || (c_A & 0x0F) > 0x09){
+			// Adjust
+			c_A += 0x06;
+		}
+	} else {
+		if ((c_F >> c_CarryFlag & 1) == 1) {
+			c_A -= 0x60;
+		}
+
+		if (((c_F >> c_HalfCarryFlag) & 1) == 1) {
+			c_A -= 0x06;
+		}
+	}
+
+	// Set zero flag
+	if (c_A == 0) {
+		c_F |= (1 << c_ZeroFlag);
+	} else {
+		c_F &= ~(1 << c_ZeroFlag);
+	}
+
+	// Clear Half-Carry Flag
+	c_F &= ~(1 << c_HalfCarryFlag);
 }
 
 void GBC_CPU::CPL() {
