@@ -248,4 +248,258 @@ private:
 	 */
 	void LD_HL_SPe();
 
+	// 8-bit arithmetic and logical instructions
+
+	/**
+	 * @brief ADD A, r: Add to the 8-bit A register, data from the 8-bit register r.
+	 * @param source The hex representation for the source register r.
+	 * @post The accumulator register now holds the sum of its previous value and the value in the source register.
+	 * The zero flag is set if the result is zero, the subtract flag is reset, the half-carry flag is set on carry from bit 3,
+	 * and the carry flag is set on carry from bit 7.
+	 */
+	void ADD_A_r(BYTE source);
+
+	/**
+	 * @brief ADD A, n: Add to the 8-bit A register, 8-bit immediate data n.
+	 * @post The accumulator register now holds the sum of its previous value and the immediate value n located at PC+1.
+	 * The zero flag is set if the result is zero, the subtract flag is reset, the half-carry flag is set on carry from bit 3,
+	 * and the carry flag is set on carry from bit 7.
+	 */
+	void ADD_A_n();
+
+	/**
+	 * @brief ADD A, (HL): Add to the 8-bit A register, data from the absolute address specified by the 16-bit register HL.
+	 * @post The accumulator register now holds the sum of its previous value and the value held in memory located at the address in HL.
+	 * The zero flag is set if the result is zero, the subtract flag is reset, the half-carry flag is set on carry from bit 3,
+	 * and the carry flag is set on carry from bit 7.
+	 */
+	void ADD_A_HL();
+
+	/**
+	 * @brief ADC A, r: Add to the 8-bit A register, data from the 8-bit register r and the value of the carry flag.
+	 * @param source The hex representation for the source register r.
+	 * @post The accumulator register now holds the sum of its previous value, the value in the source register, and the carry flag.
+	 * The zero flag is set if the result is zero, the subtract flag is reset, the half-carry flag is set on carry from bit 3,
+	 * and the carry flag is set on carry from bit 7.
+	 */
+	void ADC_A_r(BYTE source);
+
+	/**
+	 * @brief ADC A, n: Add to the 8-bit A register, 8-bit immediate data n and the value of the carry flag.
+	 * @post The accumulator register now holds the sum of its previous value, the immediate value n located at PC+1, and the carry flag.
+	 * The zero flag is set if the result is zero, the subtract flag is reset, the half-carry flag is set on carry from bit 3,
+	 * and the carry flag is set on carry from bit 7.
+	 */
+	void ADC_A_n();
+
+	/**
+	 * @brief ADC A, (HL): Add to the 8-bit A register, data from the absolute address specified by the 16-bit register HL and the carry flag.
+	 * @post The accumulator register now holds the sum of its previous value, the value held in memory at the address in HL, and the carry flag.
+	 * The zero flag is set if the result is zero, the subtract flag is reset, the half-carry flag is set on carry from bit 3,
+	 * and the carry flag is set on carry from bit 7.
+	 */
+	void ADC_A_HL();
+
+	/**
+	 * @brief SUB r: Subtract from the 8-bit A register, data from the 8-bit register r.
+	 * @param source The hex representation for the source register r.
+	 * @post The accumulator register now holds the difference of its previous value and the value in the source register.
+	 * The zero flag is set if the result is zero, the subtract flag is set, the half-carry flag is set on borrow from bit 4,
+	 * and the carry flag is set on borrow from bit 8.
+	 */
+	void SUB_r(BYTE source);
+
+	/**
+	 * @brief SUB n: Subtract from the 8-bit A register, 8-bit immediate data n.
+	 * @post The accumulator register now holds the difference of its previous value and the immediate value n located at PC+1.
+	 * The zero flag is set if the result is zero, the subtract flag is set, the half-carry flag is set on borrow from bit 4,
+	 * and the carry flag is set on borrow from bit 8.
+	 */
+	void SUB_n();
+
+	/**
+	 * @brief SUB (HL): Subtract from the 8-bit A register, data from the absolute address specified by the 16-bit register HL.
+	 * @post The accumulator register now holds the difference of its previous value and the value held in memory at the address in HL.
+	 * The zero flag is set if the result is zero, the subtract flag is set, the half-carry flag is set on borrow from bit 4,
+	 * and the carry flag is set on borrow from bit 8.
+	 */
+	void SUB_HL();
+
+	/**
+	 * @brief SBC A, r: Subtract from the 8-bit A register, data from the 8-bit register r and the value of the carry flag.
+	 * @param source The hex representation for the source register r.
+	 * @post The accumulator register now holds the difference of its previous value and the sum of the source register and the carry flag.
+	 * The zero flag is set if the result is zero, the subtract flag is set, the half-carry flag is set on borrow from bit 4,
+	 * and the carry flag is set on borrow from bit 8.
+	 */
+	void SBC_A_r(BYTE source);
+
+	/**
+	 * @brief SBC A, n: Subtract from the 8-bit A register, 8-bit immediate data n and the value of the carry flag.
+	 * @post The accumulator register now holds the difference of its previous value and the sum of the immediate value n located at PC+1 and the carry flag.
+	 * The zero flag is set if the result is zero, the subtract flag is set, the half-carry flag is set on borrow from bit 4,
+	 * and the carry flag is set on borrow from bit 8.
+	 */
+	void SBC_A_n();
+
+	/**
+	 * @brief SBC A, (HL): Subtract from the 8-bit A register, data from the absolute address specified by the 16-bit register HL and the carry flag.
+	 * @post The accumulator register now holds the difference of its previous value and the sum of the value held in memory at the address in HL and the carry flag.
+	 * The zero flag is set if the result is zero, the subtract flag is set, the half-carry flag is set on borrow from bit 4,
+	 * and the carry flag is set on borrow from bit 8.
+	 */
+	void SBC_A_HL();
+
+	/**
+	 * @brief AND r: Bitwise AND between the 8-bit A register and the 8-bit register r.
+	 * @param source The hex representation for the source register r.
+	 * @post The accumulator register now holds the result of a bitwise AND of its previous value and the value in the source register.
+	 * The zero flag is set if the result is zero, the subtract flag is reset, the half-carry flag is set, and the carry flag is reset.
+	 */
+	void AND_r(BYTE source);
+
+	/**
+	 * @brief AND n: Bitwise AND between the 8-bit A register and 8-bit immediate data n.
+	 * @post The accumulator register now holds the result of a bitwise AND of its previous value and the immediate value n located at PC+1.
+	 * The zero flag is set if the result is zero, the subtract flag is reset, the half-carry flag is set, and the carry flag is reset.
+	 */
+	void AND_n();
+
+	/**
+	 * @brief AND (HL): Bitwise AND between the 8-bit A register and data from the absolute address specified by the 16-bit register HL.
+	 * @post The accumulator register now holds the result of a bitwise AND of its previous value and the value held in memory at the address in HL.
+	 * The zero flag is set if the result is zero, the subtract flag is reset, the half-carry flag is set, and the carry flag is reset.
+	 */
+	void AND_HL();
+
+	/**
+	 * @brief XOR r: Bitwise XOR between the 8-bit A register and the 8-bit register r.
+	 * @param source The hex representation for the source register r.
+	 * @post The accumulator register now holds the result of a bitwise XOR of its previous value and the value in the source register.
+	 * The zero flag is set if the result is zero, and the subtract, half-carry, and carry flags are reset.
+	 */
+	void XOR_r(BYTE source);
+
+	/**
+	 * @brief XOR n: Bitwise XOR between the 8-bit A register and 8-bit immediate data n.
+	 * @post The accumulator register now holds the result of a bitwise XOR of its previous value and the immediate value n located at PC+1.
+	 * The zero flag is set if the result is zero, and the subtract, half-carry, and carry flags are reset.
+	 */
+	void XOR_n();
+
+	/**
+	 * @brief XOR (HL): Bitwise XOR between the 8-bit A register and data from the absolute address specified by the 16-bit register HL.
+	 * @post The accumulator register now holds the result of a bitwise XOR of its previous value and the value held in memory at the address in HL.
+	 * The zero flag is set if the result is zero, and the subtract, half-carry, and carry flags are reset.
+	 */
+	void XOR_HL();
+
+	/**
+	 * @brief OR r: Bitwise OR between the 8-bit A register and the 8-bit register r.
+	 * @param source The hex representation for the source register r.
+	 * @post The accumulator register now holds the result of a bitwise OR of its previous value and the value in the source register.
+	 * The zero flag is set if the result is zero, and the subtract, half-carry, and carry flags are reset.
+	 */
+	void OR_r(BYTE source);
+
+	/**
+	 * @brief OR n: Bitwise OR between the 8-bit A register and 8-bit immediate data n.
+	 * @post The accumulator register now holds the result of a bitwise OR of its previous value and the immediate value n located at PC+1.
+	 * The zero flag is set if the result is zero, and the subtract, half-carry, and carry flags are reset.
+	 */
+	void OR_n();
+
+	/**
+	 * @brief OR (HL): Bitwise OR between the 8-bit A register and data from the absolute address specified by the 16-bit register HL.
+	 * @post The accumulator register now holds the result of a bitwise OR of its previous value and the value held in memory at the address in HL.
+	 * The zero flag is set if the result is zero, and the subtract, half-carry, and carry flags are reset.
+	 */
+	void OR_HL();
+
+	/**
+	 * @brief CP r: Compare the 8-bit A register with the 8-bit register r by subtraction, discarding the result.
+	 * @param source The hex representation for the source register r.
+	 * @post Flags are set as if the value in the source register had been subtracted from A, but the accumulator register is unchanged.
+	 * The zero flag is set if A equals the source register, the subtract flag is set, the half-carry flag is set on borrow from bit 4,
+	 * and the carry flag is set on borrow from bit 8.
+	 */
+	void CP_r(BYTE source);
+
+	/**
+	 * @brief CP n: Compare the 8-bit A register with 8-bit immediate data n by subtraction, discarding the result.
+	 * @post Flags are set as if the immediate value n located at PC+1 had been subtracted from A, but the accumulator register is unchanged.
+	 * The zero flag is set if A equals n, the subtract flag is set, the half-carry flag is set on borrow from bit 4,
+	 * and the carry flag is set on borrow from bit 8.
+	 */
+	void CP_n();
+
+	/**
+	 * @brief CP (HL): Compare the 8-bit A register with data from the absolute address specified by the 16-bit register HL by subtraction, discarding the result.
+	 * @post Flags are set as if the value held in memory at the address in HL had been subtracted from A, but the accumulator register is unchanged.
+	 * The zero flag is set if the values are equal, the subtract flag is set, the half-carry flag is set on borrow from bit 4,
+	 * and the carry flag is set on borrow from bit 8.
+	 */
+	void CP_HL();
+
+	/**
+	 * @brief INC r: Increment the 8-bit register r by 1.
+	 * @param dest The hex representation for the destination register r.
+	 * @post The destination register now holds its previous value plus 1.
+	 * The zero flag is set if the result is zero, the subtract flag is reset, the half-carry flag is set on carry from bit 3,
+	 * and the carry flag is unchanged.
+	 */
+	void INC_r(BYTE dest);
+
+	/**
+	 * @brief INC (HL): Increment the value held at the absolute address specified by the 16-bit register HL by 1.
+	 * @post The memory location pointed to by the address in HL now holds its previous value plus 1.
+	 * The zero flag is set if the result is zero, the subtract flag is reset, the half-carry flag is set on carry from bit 3,
+	 * and the carry flag is unchanged.
+	 */
+	void INC_HL();
+
+	/**
+	 * @brief DEC r: Decrement the 8-bit register r by 1.
+	 * @param dest The hex representation for the destination register r.
+	 * @post The destination register now holds its previous value minus 1.
+	 * The zero flag is set if the result is zero, the subtract flag is set, the half-carry flag is set on borrow from bit 4,
+	 * and the carry flag is unchanged.
+	 */
+	void DEC_r(BYTE dest);
+
+	/**
+	 * @brief DEC (HL): Decrement the value held at the absolute address specified by the 16-bit register HL by 1.
+	 * @post The memory location pointed to by the address in HL now holds its previous value minus 1.
+	 * The zero flag is set if the result is zero, the subtract flag is set, the half-carry flag is set on borrow from bit 4,
+	 * and the carry flag is unchanged.
+	 */
+	void DEC_HL();
+
+	/**
+	 * @brief DAA: Decimal adjust the accumulator after an addition or subtraction between two BCD-encoded values.
+	 * @post The accumulator register is adjusted so that the result of the preceding addition or subtraction is a valid BCD value.
+	 * The zero flag is set if the result is zero, the half-carry flag is reset, the carry flag is set if the adjustment produced a carry,
+	 * and the subtract flag is unchanged.
+	 */
+	void DAA();
+
+	/**
+	 * @brief CPL: Complement the 8-bit A register (bitwise NOT).
+	 * @post The accumulator register now holds the bitwise complement of its previous value.
+	 * The subtract and half-carry flags are set; the zero and carry flags are unchanged.
+	 */
+	void CPL();
+
+	/**
+	 * @brief SCF: Set the carry flag.
+	 * @post The carry flag is set; the subtract and half-carry flags are reset; the zero flag is unchanged.
+	 */
+	void SCF();
+
+	/**
+	 * @brief CCF: Complement (toggle) the carry flag.
+	 * @post The carry flag is toggled; the subtract and half-carry flags are reset; the zero flag is unchanged.
+	 */
+	void CCF();
+
 };
