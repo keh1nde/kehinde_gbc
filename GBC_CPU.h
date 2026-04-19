@@ -8,11 +8,37 @@
 #include <string>
 #include "GBC_BUS.h"
 
+
+/*
+ * For future reference:
+ * Reading a bit: (c_F >> c_AnyFlag) & 1
+ * Setting a bit: c_F |= (1 << c_AnyFlag)
+ * Clearing a bit: c_F &= ~(1 << c_AnyFlag)
+ * Assign computed truth value to bit: (c_F &= ~mask; if (cond) c_F |= mask;)
+ */
 // Type Aliases
+
 constexpr int c_ZeroFlag      = 7;
 constexpr int c_SubtractFlag  = 6;
 constexpr int c_HalfCarryFlag = 5;
 constexpr int c_CarryFlag     = 4;
+
+constexpr int c_PairBC = 0;
+constexpr int c_PairDE = 1;
+constexpr int c_PairHL = 2;
+constexpr int c_PairSP = 3;
+// rp2 table: code 3 means AF instead of SP. Numerically collides with c_PairSP —
+// callers must route through the RP2-flavored helpers (getPairByCode2 / storeImmediateWordRP2).
+constexpr int c_PairAF = 3;
+
+constexpr int c_RegB = 0;
+constexpr int c_RegC = 1;
+constexpr int c_RegD = 2;
+constexpr int c_RegE = 3;
+constexpr int c_RegH = 4;
+constexpr int c_RegL = 5;
+constexpr int c_RegHL = 6;
+constexpr int c_RegA = 7;
 
 class GBC_CPU {
 	// Registers
