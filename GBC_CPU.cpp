@@ -1206,7 +1206,54 @@ void GBC_CPU::CPL() {
 	c_F |= (1 << c_SubtractFlag);
 	c_F |= (1 << c_HalfCarryFlag);
 }
-// ———————— End 8-bit ADD instructions, begin [placeholder] instructions ————————
+// ———————— End 8-bit ALU instructions, begin 16-bit ALU instructions ————————
+
+void GBC_CPU::INC_rr(const BYTE rr) {
+	const WORD value = getPairByCode(rr) + 1;
+	storeImmediateWord(rr, value);
+}
+
+void GBC_CPU::DEC_rr(const BYTE rr) {
+	const WORD value = getPairByCode(rr) - 1;
+	storeImmediateWord(rr, value);
+}
+
+void GBC_CPU::ADD_HL_rr(const BYTE rr) {
+	const WORD source_val = getPairByCode(rr);
+	const WORD HL_value = getPairByCode(c_PairHL);
+	// Clear the following bits
+	c_F &= ~((1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	// Check half_carry and carry status, set bits if true.
+	const bool half_carry_val = (((source_val & 0xFFF) + (HL_value & 0xFFF)) & 0x1000) != 0;
+	const bool carry_val = ((static_cast<uint32_t>(source_val) + (HL_value & 0xFF)) & 0x10000) != 0;
+
+	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
+	if (carry_val) c_F |= 1 << c_CarryFlag;
+
+	const WORD sum = source_val + HL_value;
+	storeImmediateWord(c_PairHL, sum);
+}
+
+void GBC_CPU::ADD_SP_e() {
+	const int8_t e = static_cast<int8_t>(getNextOpcode());
+
+	// Clear all bits
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	// Check half_carry and carry status, set bits if true.
+	const bool half_carry_val = ((c_StackPointer & 0xF) + (e & 0xF) & 0x10) != 0;
+	const bool carry_val = ((c_StackPointer & 0xFF) + (e & 0xFF) & 0x100) != 0;
+
+	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
+	if (carry_val) c_F |= 1 << c_CarryFlag;
+
+	c_StackPointer += e;
+}
+
+
+
+// ———————— End 16-bit ALU instructions, begin [placeholder] instructions ————————
 
 
 // ———————— End [placeholder] instructions, begin helper functions ————————
