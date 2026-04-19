@@ -585,25 +585,23 @@ void GBC_CPU::execute() {
 
 		default: break; // TODO: Implement error handling.
 	}
-
-
 }
 
 void GBC_CPU::LD_r_reg(const BYTE dest, const BYTE source) {
-	storeByCode(dest, source);
+	storeByteByCode(dest, source);
 }
 
 void GBC_CPU::LD_r_n(const BYTE dest) {
 	const int immediate = getNextOpcode();
-	storeByCode(dest, immediate);
+	storeByteByCode(dest, immediate);
 }
 
-void GBC_CPU::LD_r_HL(BYTE dest) {
+void GBC_CPU::LD_r_HL(const BYTE dest) {
 	const BYTE high = c_H;
 	const BYTE low = c_L;
 
 	const WORD address = (high << 8) | low;
-	storeImmediate(dest, bus_.read8(address));
+	storeImmediateByte(dest, bus_.read8(address));
 }
 
 void GBC_CPU::LD_HL_r(const BYTE source) {
@@ -612,7 +610,7 @@ void GBC_CPU::LD_HL_r(const BYTE source) {
 
 	const WORD address = (high << 8) | low;
 
-	bus_.write8(address, getByCode(source));
+	bus_.write8(address, getByteByCode(source));
 
 }
 
@@ -621,7 +619,7 @@ void GBC_CPU::LD_HL_n() {
 	const BYTE high = c_H;
 	const BYTE low  = c_L;
 
-	const WORD address = (high << 8) | low; // TODO: Verify this is the correct implementation
+	const WORD address = (high << 8) | low;
 	const BYTE imm = getNextOpcode();
 
 	bus_.write8(address, imm);
