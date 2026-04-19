@@ -1285,7 +1285,31 @@ void GBC_CPU::storeImmediate(const BYTE dest, const BYTE imm) {
 	}
 }
 
-BYTE GBC_CPU::getByCode(const BYTE source) {
+void GBC_CPU::storeImmediateWord(const BYTE dest, const WORD imm) {
+	const BYTE imm_lsb = imm & 0xFF;
+	const BYTE imm_msb = imm >> 8;
+	switch (dest) {
+		case 0:
+			c_B = imm_msb;
+			c_C = imm_lsb;
+			break;
+		case 1:
+			c_D = imm_msb;
+			c_E = imm_lsb;
+			break;
+		case 2:
+			c_H = imm_msb;
+			c_L = imm_lsb;
+			break;
+		case 3:
+			c_StackPointer = imm;
+			break;
+		default:
+			return;
+	}
+}
+
+BYTE GBC_CPU::getByteByCode(const BYTE source) {
 	switch (source) {
 		case 0:
 			return c_B;
@@ -1307,4 +1331,112 @@ BYTE GBC_CPU::getByCode(const BYTE source) {
 	}
 }
 
+void GBC_CPU::generalAddInstruction(const BYTE source_val) {
+	// Clear all bits
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
 
+	// Check half_carry and carry status, set bits if true.
+	const bool half_carry_val = ((c_A & 0xF) + (source_val & 0xF) & 0x10) != 0;
+	const bool carry_val = ((c_A & 0xFF) + (source_val & 0xFF) & 0x100) != 0;
+
+	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
+	if (carry_val) c_F |= 1 << c_CarryFlag;
+
+	// Compute the sum
+	c_A = c_A + source_val;
+
+	// Check if the result is zero. If so, set.
+	if (c_A == 0) {
+		c_F |= (1 << c_ZeroFlag);
+	}
+}
+
+void GBC_CPU::generalAdcInstruction(const BYTE source_val) {
+	// Save the carry bit before clearing.
+	const BYTE cy = (c_F >> c_CarryFlag) & 1;
+
+	// Clear all bits
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	// Check half_carry and carry status, set bits if true.
+	const bool half_carry_val = ((c_A & 0xF) + (source_val & 0xF) + cy & 0x10) != 0;
+	const bool carry_val = ((c_A & 0xFF) + (source_val & 0xFF)  + cy & 0x100) != 0;
+
+	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
+	if (carry_val) c_F |= 1 << c_CarryFlag;
+
+	// Compute the sum with carry.
+	c_A = c_A + source_val + cy;
+
+	// Check if the result is zero. If so, set.
+	if (c_A == 0) {
+		c_F |= (1 << c_ZeroFlag);
+	}
+}
+
+void GBC_CPU::generalSubInstruction(const BYTE source_val) {
+	// Clear all bits
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	// Check half_carry and carry status, set bits if true.
+	const bool half_carry_val = ((c_A & 0xF) - (source_val & 0xF) & 0x10) != 0;
+	const bool carry_val = ((c_A & 0xFF) - (source_val & 0xFF) & 0x100) != 0;
+
+	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
+	if (carry_val) c_F |= 1 << c_CarryFlag;
+
+	// Compute the difference.
+	c_A = c_A - source_val;
+
+	// Check if the result is zero. If so, set.
+	if (c_A == 0) {
+		c_F |= (1 << c_ZeroFlag);
+	}
+
+	// Set SubtractFlag to 1
+	c_F |= (1 << c_SubtractFlag);
+}
+
+void GBC_CPU::generalSbcInstruction(const BYTE source_val) {
+	const BYTE cy = (c_F >> c_CarryFlag) & 1;
+	// Clear all bits
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	// Check half_carry and carry status, set bits if true.
+	const bool half_carry_val = ((c_A & 0xF) - (source_val & 0xF) - cy & 0x10) != 0;
+	const bool carry_val = ((c_A & 0xFF) - (source_val & 0xFF)  - cy & 0x100) != 0;
+
+	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
+	if (carry_val) c_F |= 1 << c_CarryFlag;
+
+	// Complete the sum.
+	c_A = c_A - source_val - cy;
+
+	// Check if the result is zero. If so, set.
+	if (c_A  == 0) {
+		c_F |= (1 << c_ZeroFlag);
+	}
+
+	// Set SubtractFlag to 1
+	c_F |= (1 << c_SubtractFlag);
+}
+
+void GBC_CPU::generalCprInstruction(const BYTE source_val) {
+	// Clear all bits
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	// Check half_carry and carry status, set bits if true.
+	const bool half_carry_val = ((c_A & 0xF) - (source_val & 0xF) & 0x10) != 0;
+	const bool carry_val = ((c_A & 0xFF) - (source_val & 0xFF) & 0x100) != 0;
+
+	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
+	if (carry_val) c_F |= 1 << c_CarryFlag;
+
+	// Compute difference and check if the result is zero. If so, set.
+	if (const BYTE result = c_A - source_val; result == 0) {
+		c_F |= (1 << c_ZeroFlag);
+	}
+
+	// Set SubtractFlag to 1
+	c_F |= (1 << c_SubtractFlag);
+}
