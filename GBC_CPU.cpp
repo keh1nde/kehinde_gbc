@@ -1184,6 +1184,53 @@ void GBC_CPU::storeByCode(const BYTE dest, const BYTE source) {
 	}
 }
 
+/*void GBC_CPU::storeWordByCode(const WORD dest, const WORD source) {
+	BYTE value;
+	BYTE val_msb;
+	BYTE val_lsb;
+	switch (source) {
+		case 0:
+			val_msb = c_B;
+			val_lsb = c_C;
+			value = (val_msb << 8) | val_lsb;
+			break;
+		case 1:
+			val_msb = c_D;
+			val_lsb = c_E;
+			value = (val_msb << 8) | val_lsb;
+			break;
+		case 2:
+			val_msb = c_H;
+			val_lsb = c_L;
+			value = (val_msb << 8) | val_lsb;
+			break;
+		case 3:
+			value = c_StackPointer;
+			break;
+		default:
+			return;
+	}
+	switch (dest) {
+		case 0:
+			storeByteByCode(c_B, value & 0xFF);
+			storeByteByCode(c_C, value >> 8);
+			break;
+		case 1:
+			storeByteByCode(c_D, value & 0xFF);
+			storeByteByCode(c_E, value >> 8);
+			break;
+		case 2:
+			storeByteByCode(c_H, value & 0xFF);
+			storeByteByCode(c_L, value >> 8);
+			break;
+			case 3:
+			c_StackPointer = value;
+			break;
+		default:
+			return;
+	}
+}*/
+
 
 // 0b10 000 110 4 + 2 + 0 = 6
 void GBC_CPU::storeImmediate(const BYTE dest, const BYTE imm) {
