@@ -5,6 +5,8 @@
 
 #include "GBC_CPU.h"
 
+#include <numbers>
+
 GBC_CPU::GBC_CPU(const GBC_BUS& bus)
 : c_ProgramCounter(0x0000), c_StackPointer(0xFFFE), c_A(0x11), c_B(0x00), c_C(0x00), c_D(0x00),
 c_E(0x00), c_H(0x00), c_F(0x00), c_L(0x00), bus_(bus) {}
