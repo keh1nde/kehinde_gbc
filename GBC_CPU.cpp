@@ -775,8 +775,7 @@ void GBC_CPU::LD_rr_nn(const BYTE rr) {
 
 	const WORD imm = (nn_msb << 8) | nn_lsb;
 
-	storeImmediate(high, nn_lsb);
-	storeImmediate(low, nn_msb);
+	storeImmediateWord(rr, imm);
 }
 
 void GBC_CPU::LD_nn_SP() {
