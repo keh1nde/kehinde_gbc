@@ -294,7 +294,7 @@ void GBC_CPU::execute() {
 			PUSH_rr(c_PairHL);
 			break;
 		case 0xF5:
-			// TODO: Implement AF as an entry inside store modification functions including read and write.
+			PUSH_rr(c_PairAF);
 			break;
 		case 0xC1:
 			POP_rr(c_PairBC);
@@ -306,7 +306,7 @@ void GBC_CPU::execute() {
 			POP_rr(c_PairHL);
 			break;
 		case 0xF1:
-			// TODO: Implement AF as an entry inside store modification functions including read and write.
+			POP_rr(c_PairAF);
 			break;
 		case 0xF8:
 			LD_HL_SPe();
@@ -798,13 +798,11 @@ void GBC_CPU::LD_SP_HL() {
 
 void GBC_CPU::PUSH_rr(const BYTE rr) {
 	c_StackPointer -= 2;
-
-	// TODO: Write a getPairByCode(BYTE);
-	bus_.write16(c_StackPointer, rr);
+	bus_.write16(c_StackPointer, getPairByCode2(rr));
 }
 
 void GBC_CPU::POP_rr(const BYTE rr) {
-	storeImmediateWord(rr, bus_.read16(c_StackPointer));
+	storeImmediateWordRP2(rr, bus_.read16(c_StackPointer));
 	c_StackPointer += 2;
 }
 
@@ -1254,7 +1252,7 @@ void GBC_CPU::storeByteByCode(const BYTE dest, const BYTE source) {
 
 
 // 0b10 000 110 4 + 2 + 0 = 6
-void GBC_CPU::storeImmediate(const BYTE dest, const BYTE imm) {
+void GBC_CPU::storeImmediateByte(const BYTE dest, const BYTE imm) {
 	switch (dest) {
 		case 0:
 			c_B = imm;
@@ -1306,6 +1304,52 @@ void GBC_CPU::storeImmediateWord(const BYTE dest, const WORD imm) {
 			break;
 		default:
 			return;
+	}
+}
+
+void GBC_CPU::storeImmediateWordRP2(const BYTE dest, const WORD imm) {
+	const BYTE imm_lsb = imm & 0xFF;
+	const BYTE imm_msb = imm >> 8;
+	switch (dest) {
+		case 0:
+			c_B = imm_msb;
+			c_C = imm_lsb;
+			break;
+		case 1:
+			c_D = imm_msb;
+			c_E = imm_lsb;
+			break;
+		case 2:
+			c_H = imm_msb;
+			c_L = imm_lsb;
+			break;
+		case 3:
+			// AF write. Low nibble of F must stay zero — real hardware cannot store there.
+			c_A = imm_msb;
+			c_F = imm_lsb & 0xF0;
+			break;
+		default:
+			return;
+	}
+}
+
+WORD GBC_CPU::getPairByCode(const BYTE code) const {
+	switch (code) {
+		case 0: return (c_B << 8) | c_C;
+		case 1: return (c_D << 8) | c_E;
+		case 2: return (c_H << 8) | c_L;
+		case 3: return c_StackPointer;
+		default: return 0;
+	}
+}
+
+WORD GBC_CPU::getPairByCode2(const BYTE code) const {
+	switch (code) {
+		case 0: return (c_B << 8) | c_C;
+		case 1: return (c_D << 8) | c_E;
+		case 2: return (c_H << 8) | c_L;
+		case 3: return (c_A << 8) | c_F;
+		default: return 0;
 	}
 }
 
