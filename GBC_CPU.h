@@ -41,9 +41,6 @@ constexpr int c_RegHL = 6;
 constexpr int c_RegA = 7;
 
 class GBC_CPU {
-	// Registers
-
-
 public:
 	// Class Methods
 	explicit GBC_CPU(const GBC_BUS& bus); // aka the initializer/reset.
@@ -54,6 +51,7 @@ private:
 	WORD c_ProgramCounter;
 	WORD c_StackPointer;
 
+	// Registers
 	BYTE c_A;
 	BYTE c_B;
 	BYTE c_C;
