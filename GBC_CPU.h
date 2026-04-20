@@ -663,4 +663,267 @@ private:
 	 */
 	void DEC_rr(BYTE rr);
 
+	// CB-prefixed instructions
+	// All ops use the 3-bit r code (0=B..5=L, 6=(HL), 7=A). The (HL) slot reads and writes memory
+	// through the bus; all other codes operate on the named register in place.
+
+	/**
+	 * @brief RLC r: Rotate the operand left; bit 7 wraps into bit 0 and is also copied into the carry flag.
+	 * @param r The 3-bit register code for the operand; code 6 denotes the value held at (HL).
+	 * @post The operand holds its previous value rotated left by one. The zero flag is set if the result is zero,
+	 * the subtract and half-carry flags are reset, and the carry flag holds the previous bit 7.
+	 */
+	void RLC(BYTE r);
+
+	/**
+	 * @brief RRC r: Rotate the operand right; bit 0 wraps into bit 7 and is also copied into the carry flag.
+	 * @param r The 3-bit register code for the operand; code 6 denotes the value held at (HL).
+	 * @post The operand holds its previous value rotated right by one. The zero flag is set if the result is zero,
+	 * the subtract and half-carry flags are reset, and the carry flag holds the previous bit 0.
+	 */
+	void RRC(BYTE r);
+
+	/**
+	 * @brief RL r: Rotate the operand left through the carry flag; the previous carry becomes bit 0 and previous bit 7 becomes the new carry.
+	 * @param r The 3-bit register code for the operand; code 6 denotes the value held at (HL).
+	 * @post The operand holds its previous value rotated left through carry. The zero flag is set if the result is zero,
+	 * the subtract and half-carry flags are reset, and the carry flag holds the previous bit 7.
+	 */
+	void RL(BYTE r);
+
+	/**
+	 * @brief RR r: Rotate the operand right through the carry flag; the previous carry becomes bit 7 and previous bit 0 becomes the new carry.
+	 * @param r The 3-bit register code for the operand; code 6 denotes the value held at (HL).
+	 * @post The operand holds its previous value rotated right through carry. The zero flag is set if the result is zero,
+	 * the subtract and half-carry flags are reset, and the carry flag holds the previous bit 0.
+	 */
+	void RR(BYTE r);
+
+	/**
+	 * @brief SLA r: Arithmetic shift the operand left by one; bit 0 is set to zero and bit 7 is shifted into the carry flag.
+	 * @param r The 3-bit register code for the operand; code 6 denotes the value held at (HL).
+	 * @post The operand holds its previous value shifted left by one with a zero shifted into bit 0. The zero flag is set
+	 * if the result is zero, the subtract and half-carry flags are reset, and the carry flag holds the previous bit 7.
+	 */
+	void SLA(BYTE r);
+
+	/**
+	 * @brief SRA r: Arithmetic shift the operand right by one; bit 7 is preserved and bit 0 is shifted into the carry flag.
+	 * @param r The 3-bit register code for the operand; code 6 denotes the value held at (HL).
+	 * @post The operand holds its previous value shifted right by one with the previous bit 7 retained. The zero flag is set
+	 * if the result is zero, the subtract and half-carry flags are reset, and the carry flag holds the previous bit 0.
+	 */
+	void SRA(BYTE r);
+
+	/**
+	 * @brief SWAP r: Swap the upper and lower nibbles of the operand.
+	 * @param r The 3-bit register code for the operand; code 6 denotes the value held at (HL).
+	 * @post The operand holds its previous value with the upper and lower nibbles exchanged. The zero flag is set if the
+	 * result is zero, and the subtract, half-carry, and carry flags are reset.
+	 */
+	void SWAP(BYTE r);
+
+	/**
+	 * @brief SRL r: Logical shift the operand right by one; bit 7 is set to zero and bit 0 is shifted into the carry flag.
+	 * @param r The 3-bit register code for the operand; code 6 denotes the value held at (HL).
+	 * @post The operand holds its previous value shifted right by one with a zero shifted into bit 7. The zero flag is set
+	 * if the result is zero, the subtract and half-carry flags are reset, and the carry flag holds the previous bit 0.
+	 */
+	void SRL(BYTE r);
+
+	/**
+	 * @brief BIT b, r: Test bit b of the operand and set the zero flag to its complement.
+	 * @param b The bit position to test (0-7).
+	 * @param r The 3-bit register code for the operand; code 6 denotes the value held at (HL).
+	 * @post The operand is unchanged. The zero flag is set if the tested bit is zero, the subtract flag is reset,
+	 * the half-carry flag is set, and the carry flag is unchanged.
+	 */
+	void BIT(BYTE b, BYTE r);
+
+	/**
+	 * @brief RES b, r: Reset bit b of the operand to zero.
+	 * @param b The bit position to reset (0-7).
+	 * @param r The 3-bit register code for the operand; code 6 denotes the value held at (HL).
+	 * @post The operand holds its previous value with bit b cleared. No flags are affected.
+	 */
+	void RES(BYTE b, BYTE r);
+
+	/**
+	 * @brief SET b, r: Set bit b of the operand to one.
+	 * @param b The bit position to set (0-7).
+	 * @param r The 3-bit register code for the operand; code 6 denotes the value held at (HL).
+	 * @post The operand holds its previous value with bit b set. No flags are affected.
+	 */
+	void SET(BYTE b, BYTE r);
+
+	// Unprefixed rotate-accumulator instructions (0x07/0x0F/0x17/0x1F).
+	// Distinct from the CB-prefixed RLC A / RRC A / RL A / RR A: these always force Z = 0
+	// (regardless of the result), and they take one machine cycle instead of two.
+
+	/**
+	 * @brief RLCA: Rotate the accumulator left; bit 7 wraps into bit 0 and is also copied into the carry flag.
+	 * @post A holds its previous value rotated left by one. The zero, subtract, and half-carry flags are reset
+	 * (Z is forced to 0 even if the result is zero), and the carry flag holds the previous bit 7.
+	 */
+	void RLCA();
+
+	/**
+	 * @brief RRCA: Rotate the accumulator right; bit 0 wraps into bit 7 and is also copied into the carry flag.
+	 * @post A holds its previous value rotated right by one. The zero, subtract, and half-carry flags are reset
+	 * (Z is forced to 0 even if the result is zero), and the carry flag holds the previous bit 0.
+	 */
+	void RRCA();
+
+	/**
+	 * @brief RLA: Rotate the accumulator left through the carry flag; the previous carry becomes bit 0 and previous bit 7 becomes the new carry.
+	 * @post A holds its previous value rotated left through carry. The zero, subtract, and half-carry flags are reset
+	 * (Z is forced to 0 even if the result is zero), and the carry flag holds the previous bit 7.
+	 */
+	void RLA();
+
+	/**
+	 * @brief RRA: Rotate the accumulator right through the carry flag; the previous carry becomes bit 7 and previous bit 0 becomes the new carry.
+	 * @post A holds its previous value rotated right through carry. The zero, subtract, and half-carry flags are reset
+	 * (Z is forced to 0 even if the result is zero), and the carry flag holds the previous bit 0.
+	 */
+	void RRA();
+
+	// Control-flow and miscellaneous instructions.
+
+	/**
+	 * @brief NOP: No operation.
+	 * @post No registers, flags, or memory are affected. PC has already been advanced past the opcode by the fetch.
+	 */
+	void NOP();
+
+	/**
+	 * @brief HALT: Halt the CPU until an interrupt is requested.
+	 * @post The internal halt latch is set; the fetch loop is expected to stop dispatching instructions
+	 * until an interrupt arrives. No flags are affected. HALT-bug behavior (when IME=0 and IF&IE != 0) is not modeled here.
+	 */
+	void HALT();
+
+	/**
+	 * @brief STOP: Stop the CPU and (on real hardware) the LCD, waiting for a button press.
+	 * @post The byte immediately following the STOP opcode (expected to be 0x00) is consumed via getNextOpcode,
+	 * and the internal halt latch is set. Full STOP semantics (LCD blanking, joypad wake, CGB speed switch) are deferred.
+	 */
+	void STOP();
+
+	/**
+	 * @brief DI: Disable interrupts.
+	 * @post The interrupt master enable (IME) flag is cleared immediately. No flags are affected.
+	 */
+	void DI();
+
+	/**
+	 * @brief EI: Enable interrupts.
+	 * @post The interrupt master enable (IME) flag is set. No flags are affected. The real-hardware delay
+	 * (effect taking place after the instruction following EI) is not currently modeled — IME flips on immediately.
+	 */
+	void EI();
+
+	/**
+	 * @brief JP nn: Jump to the 16-bit immediate address.
+	 * @post The program counter is loaded with the 16-bit immediate nn fetched from PC+1 and PC+2. No flags are affected.
+	 */
+	void JP_nn();
+
+	/**
+	 * @brief JP HL: Jump to the address held in the HL register pair.
+	 * @post The program counter is loaded with the value of HL. No flags are affected.
+	 */
+	void JP_HL();
+
+	/**
+	 * @brief JP cc, nn: Conditional jump to the 16-bit immediate address.
+	 * @param cc The 2-bit condition code (NZ/Z/NC/C).
+	 * @post The 16-bit immediate nn is always consumed from PC+1 and PC+2; the program counter is loaded with nn
+	 * only if the condition holds. No flags are affected.
+	 */
+	void JP_cc_nn(BYTE cc);
+
+	/**
+	 * @brief JR e: Relative jump by signed 8-bit offset.
+	 * @post The signed 8-bit immediate e fetched from PC+1 is added to the program counter (after the fetch advances PC past e).
+	 * No flags are affected.
+	 */
+	void JR_e();
+
+	/**
+	 * @brief JR cc, e: Conditional relative jump by signed 8-bit offset.
+	 * @param cc The 2-bit condition code (NZ/Z/NC/C).
+	 * @post The signed 8-bit immediate e is always consumed from PC+1; PC is adjusted by e only if the condition holds.
+	 * No flags are affected.
+	 */
+	void JR_cc_e(BYTE cc);
+
+	/**
+	 * @brief CALL nn: Call the subroutine at the 16-bit immediate address.
+	 * @post The 16-bit immediate nn is fetched from PC+1 and PC+2, the address of the instruction following CALL is pushed
+	 * onto the stack (SP decremented by 2), and the program counter is loaded with nn. No flags are affected.
+	 */
+	void CALL_nn();
+
+	/**
+	 * @brief CALL cc, nn: Conditional call to the 16-bit immediate address.
+	 * @param cc The 2-bit condition code (NZ/Z/NC/C).
+	 * @post The 16-bit immediate nn is always consumed; if the condition holds, the return address is pushed onto the
+	 * stack (SP decremented by 2) and PC is loaded with nn. No flags are affected.
+	 */
+	void CALL_cc_nn(BYTE cc);
+
+	/**
+	 * @brief RET: Return from subroutine.
+	 * @post The 16-bit value at the top of the stack is popped into the program counter (SP incremented by 2).
+	 * No flags are affected.
+	 */
+	void RET();
+
+	/**
+	 * @brief RET cc: Conditional return from subroutine.
+	 * @param cc The 2-bit condition code (NZ/Z/NC/C).
+	 * @post If the condition holds, the 16-bit value at the top of the stack is popped into the program counter
+	 * (SP incremented by 2). Otherwise no state changes. No flags are affected.
+	 */
+	void RET_cc(BYTE cc);
+
+	/**
+	 * @brief RETI: Return from interrupt.
+	 * @post The 16-bit value at the top of the stack is popped into the program counter (SP incremented by 2),
+	 * and the interrupt master enable (IME) flag is set. No flags are affected.
+	 */
+	void RETI();
+
+	/**
+	 * @brief RST n: Restart — call a fixed reset vector.
+	 * @param n The reset target address (one of 0x00, 0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38).
+	 * @post The address of the instruction following RST is pushed onto the stack (SP decremented by 2), and
+	 * the program counter is loaded with n. No flags are affected.
+	 */
+	void RST(BYTE n);
+
+	// ---- Control-flow helpers ----
+
+	/**
+	 * @brief Pushes a 16-bit value onto the stack.
+	 * @param val The value to push.
+	 * @post SP is decremented by 2 and the bus stores val at the new SP.
+	 */
+	void pushWord(WORD val);
+
+	/**
+	 * @brief Pops a 16-bit value off the stack.
+	 * @return The value read from the top of the stack.
+	 * @post SP is incremented by 2.
+	 */
+	WORD popWord();
+
+	/**
+	 * @brief Evaluates a 2-bit condition code against the current flag register.
+	 * @param cc The condition code (0=NZ, 1=Z, 2=NC, 3=C).
+	 * @return True if the condition holds, false otherwise.
+	 */
+	bool checkCondition(BYTE cc) const;
+
 };
