@@ -2023,3 +2023,33 @@ void GBC_CPU::generalCprInstruction(const BYTE source_val) {
 	// Set SubtractFlag to 1
 	c_F |= (1 << c_SubtractFlag);
 }
+
+// ### CB-prefixed dispatch ###
+// The CB opcode space decomposes cleanly by the top two bits of the opcode:
+//   top=00 → 8-way op selected by bits 5:3 (RLC/RRC/RL/RR/SLA/SRA/SWAP/SRL), operand = bits 2:0 (r)
+//   top=01 → BIT b, r      (b = bits 5:3, r = bits 2:0)
+//   top=10 → RES b, r
+//   top=11 → SET b, r
+// So rather than enumerating 256 cases we decode fields and dispatch.
+
+void GBC_CPU::pushWord(const WORD val) {
+	c_StackPointer -= 2;
+	bus_.write16(c_StackPointer, val);
+}
+
+WORD GBC_CPU::popWord() {
+	const WORD value = bus_.read16(c_StackPointer);
+	c_StackPointer += 2;
+	return value;
+}
+
+bool GBC_CPU::checkCondition(const BYTE cc) const {
+	switch (cc) {
+		case c_CondNZ: return ((c_F >> c_ZeroFlag)  & 1) == 0;
+		case c_CondZ:  return ((c_F >> c_ZeroFlag)  & 1) == 1;
+		case c_CondNC: return ((c_F >> c_CarryFlag) & 1) == 0;
+		case c_CondC:  return ((c_F >> c_CarryFlag) & 1) == 1;
+		default: return false;
+	}
+}
+
