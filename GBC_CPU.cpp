@@ -456,6 +456,9 @@ void GBC_CPU::execute() {
 		case 0x34:
 			INC_HL();
 			break;
+		case 0x0C:
+			INC_r(c_RegC);
+			break;
 		case 0x1C:
 			INC_r(c_RegE);
 			break;
@@ -464,9 +467,6 @@ void GBC_CPU::execute() {
 			break;
 		case 0x3C:
 			INC_r(c_RegA);
-			break;
-		case 0xC0:
-			INC_r(c_RegC);
 			break;
 		case 0x05:
 			DEC_r(c_RegB);
