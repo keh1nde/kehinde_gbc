@@ -68,6 +68,15 @@ private:
 	BYTE c_F;
 	BYTE c_L;
 
+	// Interrupt master enable. DI clears it, EI sets it (delayed-by-one semantics not modeled yet),
+	// RETI sets it. Not yet consulted by an interrupt-servicing loop — the bit is just maintained.
+	bool c_IME = false;
+
+	// HALT latch. HALT sets this; the fetch loop is expected to skip dispatch and idle the CPU
+	// until an interrupt arrives. STOP also flips it on for now (full STOP semantics — LCD off,
+	// joypad wake — are deferred).
+	bool c_Halted = false;
+
 	// RAM
 	GBC_BUS bus_;
 
