@@ -31,6 +31,12 @@ constexpr int c_PairSP = 3;
 // callers must route through the RP2-flavored helpers (getPairByCode2 / storeImmediateWordRP2).
 constexpr int c_PairAF = 3;
 
+// Condition code table (cc, 2 bits): 0=NZ, 1=Z, 2=NC, 3=C. Used by JP cc/JR cc/CALL cc/RET cc.
+constexpr int c_CondNZ = 0;
+constexpr int c_CondZ  = 1;
+constexpr int c_CondNC = 2;
+constexpr int c_CondC  = 3;
+
 constexpr int c_RegB = 0;
 constexpr int c_RegC = 1;
 constexpr int c_RegD = 2;
