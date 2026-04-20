@@ -192,7 +192,7 @@ void GBC_CPU::execute() {
 			LD_HL_r(low); // HL_w op
 			break;
 		case 0x76:
-			// TODO: Implement HALT()
+			HALT();
 			break;
 		case 0x77:
 			LD_HL_r(low); // HL_w op
