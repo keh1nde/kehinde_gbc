@@ -752,6 +752,42 @@ void GBC_CPU::execute() {
 	}
 }
 
+
+void GBC_CPU::executeCB() {
+	const BYTE opcode = getNextOpcode();
+	const BYTE top = opcode >> 6;          // bits 7:6 — family
+	const BYTE mid = (opcode >> 3) & 0x7;  // bits 5:3 — sub-op or bit index
+	const BYTE low = opcode & 0x7;         // bits 2:0 — register code r
+
+	switch (top) {
+		case 0x0:
+			switch (mid) {
+			case 0x0: RLC(low);  break;
+			case 0x1: RRC(low);  break;
+			case 0x2: RL(low);   break;
+			case 0x3: RR(low);   break;
+			case 0x4: SLA(low);  break;
+			case 0x5: SRA(low);  break;
+			case 0x6: SWAP(low); break;
+			case 0x7: SRL(low);  break;
+			default: break; // unreachable; mid is 3 bits
+			}
+			break;
+		case 0x1:
+			BIT(mid, low);
+			break;
+		case 0x2:
+			RES(mid, low);
+			break;
+		case 0x3:
+			SET(mid, low);
+			break;
+		default:
+			// TODO: unknown CB opcode handling (unreachable; top is 2 bits).
+			break;
+	}
+}
+
 void GBC_CPU::LD_r_reg(const BYTE dest, const BYTE source) {
 	storeByteByCode(dest, source);
 }
