@@ -1465,8 +1465,219 @@ void GBC_CPU::RR(const BYTE r) {
 	BYTE modified_byte = getByteByCode(r);
 	const BYTE old_bit0 = modified_byte & 1;
 
+	modified_byte = (modified_byte >> 1) | (old_carry << 7);
 
-// ———————— End [placeholder] instructions, begin helper functions ————————
+	if (old_bit0) c_F |= (1 << c_CarryFlag);
+	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	storeImmediateByte(r, modified_byte);
+}
+
+void GBC_CPU::SLA(const BYTE r) {
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	BYTE modified_byte = getByteByCode(r);
+	const BYTE old_bit7 = (modified_byte >> 7) & 1;
+
+	// Shift left; bit 0 falls in as 0 naturally.
+	modified_byte <<= 1;
+
+	if (old_bit7) c_F |= (1 << c_CarryFlag);
+	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	storeImmediateByte(r, modified_byte);
+}
+
+void GBC_CPU::SRA(const BYTE r) {
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	BYTE modified_byte = getByteByCode(r);
+	const BYTE old_bit0 = modified_byte & 1;
+	const BYTE preserved_bit7 = modified_byte & 0x80; // arithmetic shift retains sign
+
+	modified_byte = (modified_byte >> 1) | preserved_bit7;
+
+	if (old_bit0) c_F |= (1 << c_CarryFlag);
+	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	storeImmediateByte(r, modified_byte);
+}
+
+void GBC_CPU::SWAP(const BYTE r) {
+	// All four flags reset; C is reset (not preserved) — distinguishing it from the rotates/shifts.
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	BYTE modified_byte = getByteByCode(r);
+	modified_byte = (modified_byte << 4) | (modified_byte >> 4);
+
+	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	storeImmediateByte(r, modified_byte);
+}
+
+void GBC_CPU::SRL(const BYTE r) {
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	BYTE modified_byte = getByteByCode(r);
+	const BYTE old_bit0 = modified_byte & 1;
+
+	// Logical shift right: bit 7 becomes 0 naturally.
+	modified_byte >>= 1;
+
+	if (old_bit0) c_F |= (1 << c_CarryFlag);
+	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	storeImmediateByte(r, modified_byte);
+}
+
+void GBC_CPU::BIT(const BYTE b, const BYTE r) {
+	// Z = !bit, N = 0, H = 1, C = unchanged. Do not touch the carry flag.
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag));
+	c_F |= (1 << c_HalfCarryFlag);
+
+	const BYTE val = getByteByCode(r);
+	if (((val >> b) & 1) == 0) c_F |= (1 << c_ZeroFlag);
+}
+
+void GBC_CPU::RES(const BYTE b, const BYTE r) {
+	// No flags affected.
+	BYTE val = getByteByCode(r);
+	val &= ~(1 << b);
+	storeImmediateByte(r, val);
+}
+
+void GBC_CPU::SET(const BYTE b, const BYTE r) {
+	// No flags affected.
+	BYTE val = getByteByCode(r);
+	val |= (1 << b);
+	storeImmediateByte(r, val);
+}
+
+// ———————— End CB-prefixed rotate/shift/bit ops, begin unprefixed rotate-accumulator ops ————————
+
+void GBC_CPU::RLCA() {
+	const BYTE old_bit7 = (c_A >> 7) & 1;
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	c_A = (c_A << 1) | old_bit7;
+	if (old_bit7) c_F |= (1 << c_CarryFlag);
+	// Z forced to 0 — already cleared above.
+}
+
+void GBC_CPU::RRCA() {
+	const BYTE old_bit0 = c_A & 1;
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	c_A = (c_A >> 1) | (old_bit0 << 7);
+	if (old_bit0) c_F |= (1 << c_CarryFlag);
+}
+
+void GBC_CPU::RLA() {
+	const BYTE old_carry = (c_F >> c_CarryFlag) & 1;
+	const BYTE old_bit7 = (c_A >> 7) & 1;
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	c_A = (c_A << 1) | old_carry;
+	if (old_bit7) c_F |= (1 << c_CarryFlag);
+}
+
+void GBC_CPU::RRA() {
+	const BYTE old_carry = (c_F >> c_CarryFlag) & 1;
+	const BYTE old_bit0 = c_A & 1;
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	c_A = (c_A >> 1) | (old_carry << 7);
+	if (old_bit0) c_F |= (1 << c_CarryFlag);
+}
+
+// ———————— End rotate-accumulator ops, begin control-flow and miscellaneous instructions ————————
+
+void GBC_CPU::NOP() {
+	// Intentionally empty. PC was already advanced past the opcode by the fetch.
+}
+
+void GBC_CPU::HALT() {
+	c_Halted = true;
+}
+
+void GBC_CPU::STOP() {
+	// STOP is encoded as 0x10 0x00 — consume the trailing byte.
+	getNextOpcode();
+	c_Halted = true;
+}
+
+void GBC_CPU::DI() {
+	c_IME = false;
+}
+
+void GBC_CPU::EI() {
+	// Real hardware delays the enable by one instruction; not modeled here.
+	c_IME = true;
+}
+
+void GBC_CPU::JP_nn() {
+	const BYTE lsb = getNextOpcode();
+	const BYTE msb = getNextOpcode();
+	c_ProgramCounter = (msb << 8) | lsb;
+}
+
+void GBC_CPU::JP_HL() {
+	c_ProgramCounter = (c_H << 8) | c_L;
+}
+
+void GBC_CPU::JP_cc_nn(const BYTE cc) {
+	// Immediate is always consumed regardless of branch outcome.
+	const BYTE lsb = getNextOpcode();
+	const BYTE msb = getNextOpcode();
+	if (checkCondition(cc)) {
+		c_ProgramCounter = (msb << 8) | lsb;
+	}
+}
+
+void GBC_CPU::JR_e() {
+	const int8_t e = static_cast<int8_t>(getNextOpcode());
+	c_ProgramCounter += e;
+}
+
+void GBC_CPU::JR_cc_e(const BYTE cc) {
+	const int8_t e = static_cast<int8_t>(getNextOpcode());
+	if (checkCondition(cc)) {
+		c_ProgramCounter += e;
+	}
+}
+
+void GBC_CPU::CALL_nn() {
+	const BYTE lsb = getNextOpcode();
+	const BYTE msb = getNextOpcode();
+	pushWord(c_ProgramCounter); // PC has already advanced past the 3-byte CALL — return address.
+	c_ProgramCounter = (msb << 8) | lsb;
+}
+
+void GBC_CPU::CALL_cc_nn(const BYTE cc) {
+	const BYTE lsb = getNextOpcode();
+	const BYTE msb = getNextOpcode();
+	if (checkCondition(cc)) {
+		pushWord(c_ProgramCounter);
+		c_ProgramCounter = (msb << 8) | lsb;
+	}
+}
+
+void GBC_CPU::RET() {
+	c_ProgramCounter = popWord();
+}
+
+void GBC_CPU::RET_cc(const BYTE cc) {
+	if (checkCondition(cc)) {
+		c_ProgramCounter = popWord();
+	}
+}
+
+void GBC_CPU::RETI() {
+	c_ProgramCounter = popWord();
+	c_IME = true;
+}
+
+void GBC_CPU::RST(const BYTE n) {
+	pushWord(c_ProgramCounter);
+	c_ProgramCounter = n;
+}
+
+// ———————— End Rotate, shift, and bit operation instructions, begin helper functions ————————
 
 void GBC_CPU::storeByteByCode(const BYTE dest, const BYTE source) {
 	BYTE value;
