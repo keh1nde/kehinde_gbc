@@ -22,7 +22,7 @@ void GBC_CPU::execute() {
 	const BYTE opcode = getNextOpcode();
 
 	if (opcode == 0xCB) {
-		// TODO: Implement executeCB().
+		executeCB();
 		return;
 	}
 
