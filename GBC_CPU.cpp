@@ -624,6 +624,129 @@ void GBC_CPU::execute() {
 			ADD_SP_e();
 			break;
 
+		// Unprefixed rotate-accumulator ops. Distinct from CB-prefixed RLC A/etc. — Z forced to 0.
+		case 0x07:
+			RLCA();
+			break;
+		case 0x0F:
+			RRCA();
+			break;
+		case 0x17:
+			RLA();
+			break;
+		case 0x1F:
+			RRA();
+			break;
+
+		// Miscellaneous
+		case 0x00:
+			NOP();
+			break;
+		case 0x10:
+			STOP();
+			break;
+		case 0xF3:
+			DI();
+			break;
+		case 0xFB:
+			EI();
+			break;
+
+		// Jumps
+		case 0xC3:
+			JP_nn();
+			break;
+		case 0xE9:
+			JP_HL();
+			break;
+		case 0xC2:
+			JP_cc_nn(c_CondNZ);
+			break;
+		case 0xCA:
+			JP_cc_nn(c_CondZ);
+			break;
+		case 0xD2:
+			JP_cc_nn(c_CondNC);
+			break;
+		case 0xDA:
+			JP_cc_nn(c_CondC);
+			break;
+		case 0x18:
+			JR_e();
+			break;
+		case 0x20:
+			JR_cc_e(c_CondNZ);
+			break;
+		case 0x28:
+			JR_cc_e(c_CondZ);
+			break;
+		case 0x30:
+			JR_cc_e(c_CondNC);
+			break;
+		case 0x38:
+			JR_cc_e(c_CondC);
+			break;
+
+		// Calls / returns
+		case 0xCD:
+			CALL_nn();
+			break;
+		case 0xC4:
+			CALL_cc_nn(c_CondNZ);
+			break;
+		case 0xCC:
+			CALL_cc_nn(c_CondZ);
+			break;
+		case 0xD4:
+			CALL_cc_nn(c_CondNC);
+			break;
+		case 0xDC:
+			CALL_cc_nn(c_CondC);
+			break;
+		case 0xC9:
+			RET();
+			break;
+		case 0xC0:
+			RET_cc(c_CondNZ);
+			break;
+		case 0xC8:
+			RET_cc(c_CondZ);
+			break;
+		case 0xD0:
+			RET_cc(c_CondNC);
+			break;
+		case 0xD8:
+			RET_cc(c_CondC);
+			break;
+		case 0xD9:
+			RETI();
+			break;
+
+		// Restart vectors
+		case 0xC7:
+			RST(0x00);
+			break;
+		case 0xCF:
+			RST(0x08);
+			break;
+		case 0xD7:
+			RST(0x10);
+			break;
+		case 0xDF:
+			RST(0x18);
+			break;
+		case 0xE7:
+			RST(0x20);
+			break;
+		case 0xEF:
+			RST(0x28);
+			break;
+		case 0xF7:
+			RST(0x30);
+			break;
+		case 0xFF:
+			RST(0x38);
+			break;
 
 		default: break; // TODO: Implement error handling.
 	}
