@@ -1412,7 +1412,58 @@ void GBC_CPU::ADD_SP_e() {
 
 
 
-// ———————— End 16-bit ALU instructions, begin [placeholder] instructions ————————
+// ———————— End 16-bit ALU instructions, begin Rotate, shift, and bit operation instructions ————————
+
+void GBC_CPU::RLC(const BYTE r) {
+	// Clear all bits
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	BYTE modified_byte = getByteByCode(r);
+
+	// Save the most significant bit as the carry
+	c_F |= ((modified_byte >> 7) & 1) << c_CarryFlag;
+
+	modified_byte <<= 1;
+	modified_byte |= (c_F >> c_CarryFlag) & 1;
+
+	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	storeImmediateByte(r, modified_byte);
+}
+
+void GBC_CPU::RRC(const BYTE r) {
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	BYTE modified_byte = getByteByCode(r);
+	const BYTE old_bit0 = modified_byte & 1;
+
+	modified_byte = (modified_byte >> 1) | (old_bit0 << 7);
+
+	if (old_bit0) c_F |= (1 << c_CarryFlag);
+	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	storeImmediateByte(r, modified_byte);
+}
+
+void GBC_CPU::RL(const BYTE r) {
+	// Snapshot old carry before clearing F (mirrors the ADC/SBC `cy` idiom).
+	const BYTE old_carry = (c_F >> c_CarryFlag) & 1;
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	BYTE modified_byte = getByteByCode(r);
+	const BYTE old_bit7 = (modified_byte >> 7) & 1;
+
+	modified_byte = (modified_byte << 1) | old_carry;
+
+	if (old_bit7) c_F |= (1 << c_CarryFlag);
+	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	storeImmediateByte(r, modified_byte);
+}
+
+void GBC_CPU::RR(const BYTE r) {
+	const BYTE old_carry = (c_F >> c_CarryFlag) & 1;
+	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+
+	BYTE modified_byte = getByteByCode(r);
+	const BYTE old_bit0 = modified_byte & 1;
 
 
 // ———————— End [placeholder] instructions, begin helper functions ————————
