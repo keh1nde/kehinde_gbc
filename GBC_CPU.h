@@ -51,6 +51,7 @@ public:
 	// Class Methods
 	explicit GBC_CPU(const GBC_BUS& bus); // aka the initializer/reset.
 	void execute();
+	void executeCB();
 
 
 private:
