@@ -5,11 +5,26 @@
 
 #include "GBC_CPU.h"
 
+#include <ios>
+#include <iostream>
 #include <numbers>
 
-GBC_CPU::GBC_CPU(const GBC_BUS& bus)
-: c_ProgramCounter(0x0000), c_StackPointer(0xFFFE), c_A(0x11), c_B(0x00), c_C(0x00), c_D(0x00),
-c_E(0x00), c_H(0x00), c_F(0x00), c_L(0x00), bus_(bus) {}
+GBC_CPU::GBC_CPU(IBus& bus)
+: c_ProgramCounter(0x0000), c_StackPointer(0xFFFE), c_A(0x11), c_B(0x00), c_C(0x00), c_D(0xFF),
+c_E(0x56), c_H(0x00), c_F(0x80), c_L(0x0D), bus_(bus) {}
+
+void GBC_CPU::clearFlags() {
+	c_F &= ~c_AllFlagsMask;
+}
+
+void GBC_CPU::setFlag(const BYTE bit, const bool on) {
+	if (on) c_F |= (1 << bit);
+	else c_F &= ~(1 << bit);
+}
+
+bool GBC_CPU::getFlag(const BYTE bit) const {
+	return ((c_F >> bit) & 1) != 0;
+}
 
 BYTE GBC_CPU::getNextOpcode() {
 	const BYTE next = bus_.read8(c_ProgramCounter);
@@ -18,8 +33,30 @@ BYTE GBC_CPU::getNextOpcode() {
 	return next;
 }
 
+void GBC_CPU::resetPostBoot() {
+	storeImmediateWordRP2(c_PairAF, 0x1180);
+	storeImmediateWord(c_PairBC, 0x0000);
+	storeImmediateWord(c_PairDE, 0xFF56);
+	storeImmediateWord(c_PairHL, 0x000D);
+
+	c_StackPointer = 0xFFFE;
+	c_ProgramCounter = 0x0100;
+
+	c_IME = false;
+	c_Halted = false;
+
+}
+
 void GBC_CPU::execute() {
 	const BYTE opcode = getNextOpcode();
+	/*std::cout << "Now executing: " << opcode << std::endl;
+	std::cout << "Also known in hex as" << (std::stringstream{} <<
+		std::hex << static_cast<int>(opcode)).str() << std::endl;*/
+	/*std::cout << "At this point the E register has the value: " << (std::stringstream{} <<
+		std::hex << static_cast<int>(c_E)).str() << std::endl;
+	std::cout << "At this point the Z flag has the value: " << (getFlag(c_ZeroFlag) ? "True" : "False") << std::endl;
+	std::cout << "The Program Counter is at the following address: " << (std::stringstream{} <<
+		std::hex << static_cast<int>(c_ProgramCounter)).str() << std::endl;*/
 
 	if (opcode == 0xCB) {
 		executeCB();
@@ -182,6 +219,7 @@ void GBC_CPU::execute() {
 			break;
 		case 0x72:
 			LD_HL_r(low);
+			break;
 		case 0x73:
 			LD_HL_r(low); // HL_w op
 			break;
@@ -461,6 +499,8 @@ void GBC_CPU::execute() {
 			break;
 		case 0x1C:
 			INC_r(c_RegE);
+			// std::cout << "PC=" << c_ProgramCounter << " Register E value after INC_r(E): 0x" << std::hex << static_cast<int>(c_E) << std::endl;
+			// std::cout << "PC=" << c_ProgramCounter << " Z flag after INC_r: " << getFlag(c_ZeroFlag) << std::endl;
 			break;
 		case 0x2C:
 			INC_r(c_RegL);
@@ -509,6 +549,7 @@ void GBC_CPU::execute() {
 			break;
 		case 0xA5:
 			AND_r(c_RegL);
+			break;
 		case 0xA6:
 			AND_HL();
 			break;
@@ -747,8 +788,31 @@ void GBC_CPU::execute() {
 		case 0xFF:
 			RST(0x38);
 			break;
-
-		default: break; // TODO: Implement error handling.
+		// Previous missing opcodes
+		case 0x06:
+			LD_r_n(c_RegB);
+			break;
+		case 0x16:
+			LD_r_n(c_RegD);
+			break;
+		case 0x26:
+			LD_r_n(c_RegH);
+			break;
+		case 0x3E:
+			LD_r_n(c_RegA);
+			break;
+		case 0x0E:
+			LD_r_n(c_RegC);
+			break;
+		case 0x1E:
+			LD_r_n(c_RegE);
+			break;
+		case 0x2E:
+			LD_r_n(c_RegL);
+			break;
+		default:
+			throw std::runtime_error("Unimplemented opcode: 0x" +
+				(std::stringstream{} << std::hex << static_cast<int>(opcode)).str());
 	}
 }
 
@@ -783,8 +847,7 @@ void GBC_CPU::executeCB() {
 			SET(mid, low);
 			break;
 		default:
-			// TODO: unknown CB opcode handling (unreachable; top is 2 bits).
-			break;
+			throw std::runtime_error("Unimplemented opcode: " + std::to_string(opcode));
 	}
 }
 
@@ -914,8 +977,8 @@ void GBC_CPU::LD_A_HLdec() {
 	c_A = bus_.read8(address);
 
 	address--;
-	high = address & 0xFF;
-	low = address >> 8;
+	high = address >> 8;
+	low = address & 0xFF;
 
 	c_H = high;
 	c_L = low;
@@ -930,8 +993,8 @@ void GBC_CPU::LD_HLdec_A() {
 	bus_.write8(address, c_A);
 
 	address--;
-	high = address & 0xFF;
-	low = address >> 8;
+	high = address >> 8;
+	low = address & 0xFF;
 
 	c_H = high;
 	c_L = low;
@@ -944,10 +1007,9 @@ void GBC_CPU::LD_A_HLinc() {
 
 	c_A = bus_.read8(address);
 
-
 	address++;
-	high = address & 0xFF;
-	low = address >> 8;
+	high = address >> 8;
+	low = address & 0xFF;
 
 	c_H = high;
 	c_L = low;
@@ -961,8 +1023,8 @@ void GBC_CPU::LD_HLinc_A() {
 	bus_.write8(address, c_A);
 
 	address++;
-	high = address & 0xFF;
-	low = address >> 8;
+	high = address >> 8;
+	low = address & 0xFF;
 
 	c_H = high;
 	c_L = low;
@@ -1015,11 +1077,11 @@ void GBC_CPU::LD_HL_SPe() {
 	const bool carry_val = ((c_StackPointer & 0xFF) + (e & 0xFF) & 0x100) != 0;
 
 	// Clear bits first:
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	// Then, set:
-	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
-	if (carry_val) c_F |= 1 << c_CarryFlag;
+	setFlag(c_HalfCarryFlag, half_carry_val);
+	setFlag(c_CarryFlag, carry_val);
 }
 
 // ———————— End 16-bit LOAD instructions, begin 8-bit ADD instructions ————————
@@ -1105,265 +1167,225 @@ void GBC_CPU::CP_n() {
 
 void GBC_CPU::INC_r(const BYTE dest) {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 	const BYTE source_val = getByteByCode(dest) + 1;
 
-	// Check half_carry and carry status, set bits if true.
-	const bool half_carry_val = ((c_A & 0xF) + (1 & 0xF) & 0x10) != 0;
-	const bool carry_val = ((c_A & 0xFF) + (1 & 0xFF) & 0x100) != 0;
+	// Check half_carry and set bits if true.
+	const bool half_carry_val = ((source_val & 0xF) + (1 & 0xF) & 0x10) != 0;
+	// const bool carry_val = ((source_val & 0xFF) + (1 & 0xFF) & 0x100) != 0;
 
-	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
-	if (carry_val) c_F |= 1 << c_CarryFlag;
+	setFlag(c_HalfCarryFlag, half_carry_val);
+	// setFlag(c_CarryFlag, carry_val);
 
-	if (source_val == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, source_val == 0);
 
 	storeImmediateByte(dest, source_val);
 }
 
 void GBC_CPU::INC_HL() {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 	const BYTE source_val = bus_.read8((c_H << 8) | c_L) + 1;
 
 	// Check half_carry and carry status, set bits if true.
-	const bool half_carry_val = ((c_A & 0xF) + (1 & 0xF) & 0x10) != 0;
-	const bool carry_val = ((c_A & 0xFF) + (1 & 0xFF) & 0x100) != 0;
+	const bool half_carry_val = ((source_val & 0xF) + (1 & 0xF) & 0x10) != 0;
+	const bool carry_val = ((source_val & 0xFF) + (1 & 0xFF) & 0x100) != 0;
 
-	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
-	if (carry_val) c_F |= 1 << c_CarryFlag;
+	setFlag(c_HalfCarryFlag, half_carry_val);
+	setFlag(c_CarryFlag, carry_val);
 
-	if (source_val == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, source_val == 0);
 
 	bus_.write8((c_H << 8) | c_L, source_val);
 }
 
 void GBC_CPU::DEC_r(const BYTE dest) {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	const BYTE source_val = getByteByCode(dest) - 1;
 
-	const bool half_carry_val = ((c_A & 0xF) - (1 & 0xF) & 0x10) != 0;
-	const bool carry_val = ((c_A & 0xFF) - (1 & 0xFF) & 0x100) != 0;
+	const bool half_carry_val = ((source_val & 0xF) - (1 & 0xF) & 0x10) != 0;
+	// const bool carry_val = ((source_val & 0xFF) - (1 & 0xFF) & 0x100) != 0;
 
-	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
-	if (carry_val) c_F |= 1 << c_CarryFlag;
+	setFlag(c_HalfCarryFlag, half_carry_val);
+	// setFlag(c_CarryFlag, carry_val);
 
-	if (source_val == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, source_val == 0);
 
 	// Set SubtractFlag to 1
-	c_F |= (1 << c_SubtractFlag);
+	setFlag(c_SubtractFlag, true);
 
 	storeImmediateByte(dest, source_val);
 }
 
 void GBC_CPU::DEC_HL() {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	const BYTE source_val = bus_.read8((c_H << 8) | c_L) - 1;
 
-	const bool half_carry_val = ((c_A & 0xF) - (1 & 0xF) & 0x10) != 0;
-	const bool carry_val = ((c_A & 0xFF) - (1 & 0xFF) & 0x100) != 0;
+	const bool half_carry_val = ((source_val & 0xF) - (1 & 0xF) & 0x10) != 0;
+	// const bool carry_val = ((source_val & 0xFF) - (1 & 0xFF) & 0x100) != 0;
 
-	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
-	if (carry_val) c_F |= 1 << c_CarryFlag;
+	setFlag(c_HalfCarryFlag, half_carry_val);
+	// setFlag(c_CarryFlag, carry_val);
 
-	if (source_val == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, source_val == 0);
 
 	// Set SubtractFlag to 1
-	c_F |= (1 << c_SubtractFlag);
+	setFlag(c_SubtractFlag, true);
 
 	bus_.write8((c_H << 8) | c_L, source_val);
 }
 
 void GBC_CPU::AND_r(const BYTE source) {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	const BYTE val = getByteByCode(source);
 	c_A &= val;
 
 	// Set zero flag
-	if (c_A == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, c_A == 0);
 
 	// Set half carry flag
-	c_F |= (1 << c_HalfCarryFlag);
+	setFlag(c_HalfCarryFlag, true);
 }
 
 void GBC_CPU::AND_HL() {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	const BYTE val = bus_.read8((c_H << 8) | c_L);
 	c_A &= val;
 
-	if (c_A == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, c_A == 0);
 
 	// Set half carry flag
-	c_F |= (1 << c_HalfCarryFlag);
+	setFlag(c_HalfCarryFlag, true);
 }
 
 void GBC_CPU::AND_n() {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	const BYTE val = getNextOpcode();
 	c_A &= val;
 
-	if (c_A == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, c_A == 0);
 
-	c_F |= (1 << c_HalfCarryFlag);
+	setFlag(c_HalfCarryFlag, true);
 }
 
 void GBC_CPU::OR_r(const BYTE source) {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	const BYTE val = getByteByCode(source);
 	c_A |= val;
 
 	// Set zero flag
-	if (c_A == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, c_A == 0);
 }
 
 void GBC_CPU::OR_HL() {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	const BYTE val = bus_.read8((c_H << 8) | c_L);
 	c_A |= val;
 
 	// Set zero flag
-	if (c_A == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, c_A == 0);
 }
 
 void GBC_CPU::OR_n() {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	const BYTE val = getNextOpcode();
 	c_A |= val;
 
 	// Set zero flag
-	if (c_A == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, c_A == 0);
 }
 
 void GBC_CPU::XOR_r(const BYTE source) {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	const BYTE val = getByteByCode(source);
 	c_A ^= val;
 
 	// Set zero flag
-	if (c_A == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, c_A == 0);
 }
 
 void GBC_CPU::XOR_n() {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	const BYTE val = getNextOpcode();
 	c_A ^= val;
 
 	// Set zero flag
-	if (c_A == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, c_A == 0);
 }
 
 void GBC_CPU::XOR_HL() {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	const BYTE val = bus_.read8((c_H << 8) | c_L);
 	c_A ^= val;
 
 	// Set zero flag
-	if (c_A == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, c_A == 0);
 }
 
 void GBC_CPU::CCF() {
-	// Reset the half carry and subtract flags
-	c_F &= ~((1 << c_HalfCarryFlag) | (1 << c_SubtractFlag));
-
-	// Toggle the carry flag
-	c_F ^= (1 << c_CarryFlag);
+	setFlag(c_SubtractFlag, false);
+	setFlag(c_HalfCarryFlag, false);
+	setFlag(c_CarryFlag, !getFlag(c_CarryFlag));
 }
 
 void GBC_CPU::SCF() {
-	// Reset the half carry and subtract flags
-	c_F &= ~((1 << c_HalfCarryFlag) | (1 << c_SubtractFlag));
-
-	c_F |= (1 << c_CarryFlag);
+	setFlag(c_SubtractFlag, false);
+	setFlag(c_HalfCarryFlag, false);
+	setFlag(c_CarryFlag, true);
 }
 
 void GBC_CPU::DAA() {
-	if (((c_F >> c_SubtractFlag) & 1) == 0) {
-		if ((c_F >> c_CarryFlag & 1) == 1|| c_A > 0x99) {
-			// Adjust
+	if (!getFlag(c_SubtractFlag)) {
+		if (getFlag(c_CarryFlag) || c_A > 0x99) {
 			c_A += 0x60;
-
-			// Set c_CarryFlag to true
-			c_F |= (1 << c_CarryFlag);
+			setFlag(c_CarryFlag, true);
 		}
 
-		if (((c_F >> c_HalfCarryFlag) & 1) == 1 || (c_A & 0x0F) > 0x09){
-			// Adjust
+		if (getFlag(c_HalfCarryFlag) || (c_A & 0x0F) > 0x09) {
 			c_A += 0x06;
 		}
 	} else {
-		if ((c_F >> c_CarryFlag & 1) == 1) {
+		if (getFlag(c_CarryFlag)) {
 			c_A -= 0x60;
 		}
 
-		if (((c_F >> c_HalfCarryFlag) & 1) == 1) {
+		if (getFlag(c_HalfCarryFlag)) {
 			c_A -= 0x06;
 		}
 	}
 
-	// Set zero flag
-	if (c_A == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	} else {
-		c_F &= ~(1 << c_ZeroFlag);
-	}
-
-	// Clear Half-Carry Flag
-	c_F &= ~(1 << c_HalfCarryFlag);
+	setFlag(c_ZeroFlag, c_A == 0);
+	setFlag(c_HalfCarryFlag, false);
 }
 
 void GBC_CPU::CPL() {
-	c_F ^= (1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag);
+	c_F ^=  (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag);
 
 	// Set Subtract and Half-Carry flags
-	c_F |= (1 << c_SubtractFlag);
-	c_F |= (1 << c_HalfCarryFlag);
+	setFlag(c_SubtractFlag, true);
+	setFlag(c_HalfCarryFlag, true);
 }
 // ———————— End 8-bit ALU instructions, begin 16-bit ALU instructions ————————
 
@@ -1380,15 +1402,17 @@ void GBC_CPU::DEC_rr(const BYTE rr) {
 void GBC_CPU::ADD_HL_rr(const BYTE rr) {
 	const WORD source_val = getPairByCode(rr);
 	const WORD HL_value = getPairByCode(c_PairHL);
-	// Clear the following bits
-	c_F &= ~((1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	// Z unchanged; clear N/H/C so the half_carry/carry assignments below can just write into them.
+	setFlag(c_SubtractFlag, false);
+	setFlag(c_HalfCarryFlag, false);
+	setFlag(c_CarryFlag, false);
 
 	// Check half_carry and carry status, set bits if true.
 	const bool half_carry_val = (((source_val & 0xFFF) + (HL_value & 0xFFF)) & 0x1000) != 0;
-	const bool carry_val = ((static_cast<uint32_t>(source_val) + (HL_value & 0xFF)) & 0x10000) != 0;
+	const bool carry_val = ((static_cast<uint32_t>(source_val) + (HL_value & 0xFFFF)) & 0x10000) != 0;
 
-	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
-	if (carry_val) c_F |= 1 << c_CarryFlag;
+	setFlag(c_HalfCarryFlag, half_carry_val);
+	setFlag(c_CarryFlag, carry_val);
 
 	const WORD sum = source_val + HL_value;
 	storeImmediateWord(c_PairHL, sum);
@@ -1398,14 +1422,14 @@ void GBC_CPU::ADD_SP_e() {
 	const int8_t e = static_cast<int8_t>(getNextOpcode());
 
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	// Check half_carry and carry status, set bits if true.
 	const bool half_carry_val = ((c_StackPointer & 0xF) + (e & 0xF) & 0x10) != 0;
 	const bool carry_val = ((c_StackPointer & 0xFF) + (e & 0xFF) & 0x100) != 0;
 
-	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
-	if (carry_val) c_F |= 1 << c_CarryFlag;
+	setFlag(c_HalfCarryFlag, half_carry_val);
+	setFlag(c_CarryFlag, carry_val);
 
 	c_StackPointer += e;
 }
@@ -1416,64 +1440,62 @@ void GBC_CPU::ADD_SP_e() {
 
 void GBC_CPU::RLC(const BYTE r) {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	BYTE modified_byte = getByteByCode(r);
+	const BYTE old_bit7 = (modified_byte >> 7) & 1;
 
-	// Save the most significant bit as the carry
-	c_F |= ((modified_byte >> 7) & 1) << c_CarryFlag;
+	modified_byte = (modified_byte << 1) | old_bit7;
 
-	modified_byte <<= 1;
-	modified_byte |= (c_F >> c_CarryFlag) & 1;
-
-	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	setFlag(c_CarryFlag, old_bit7);
+	setFlag(c_ZeroFlag, modified_byte == 0);
 	storeImmediateByte(r, modified_byte);
 }
 
 void GBC_CPU::RRC(const BYTE r) {
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	BYTE modified_byte = getByteByCode(r);
 	const BYTE old_bit0 = modified_byte & 1;
 
 	modified_byte = (modified_byte >> 1) | (old_bit0 << 7);
 
-	if (old_bit0) c_F |= (1 << c_CarryFlag);
-	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	setFlag(c_CarryFlag, old_bit0);
+	setFlag(c_ZeroFlag, modified_byte == 0);
 	storeImmediateByte(r, modified_byte);
 }
 
 void GBC_CPU::RL(const BYTE r) {
 	// Snapshot old carry before clearing F (mirrors the ADC/SBC `cy` idiom).
-	const BYTE old_carry = (c_F >> c_CarryFlag) & 1;
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	const bool old_carry = getFlag(c_CarryFlag);
+	clearFlags();
 
 	BYTE modified_byte = getByteByCode(r);
 	const BYTE old_bit7 = (modified_byte >> 7) & 1;
 
 	modified_byte = (modified_byte << 1) | old_carry;
 
-	if (old_bit7) c_F |= (1 << c_CarryFlag);
-	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	setFlag(c_CarryFlag, old_bit7);
+	setFlag(c_ZeroFlag, modified_byte == 0);
 	storeImmediateByte(r, modified_byte);
 }
 
 void GBC_CPU::RR(const BYTE r) {
-	const BYTE old_carry = (c_F >> c_CarryFlag) & 1;
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	const bool old_carry = getFlag(c_CarryFlag);
+	clearFlags();
 
 	BYTE modified_byte = getByteByCode(r);
 	const BYTE old_bit0 = modified_byte & 1;
 
 	modified_byte = (modified_byte >> 1) | (old_carry << 7);
 
-	if (old_bit0) c_F |= (1 << c_CarryFlag);
-	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	setFlag(c_CarryFlag, old_bit0);
+	setFlag(c_ZeroFlag, modified_byte == 0);
 	storeImmediateByte(r, modified_byte);
 }
 
 void GBC_CPU::SLA(const BYTE r) {
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	BYTE modified_byte = getByteByCode(r);
 	const BYTE old_bit7 = (modified_byte >> 7) & 1;
@@ -1481,13 +1503,13 @@ void GBC_CPU::SLA(const BYTE r) {
 	// Shift left; bit 0 falls in as 0 naturally.
 	modified_byte <<= 1;
 
-	if (old_bit7) c_F |= (1 << c_CarryFlag);
-	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	setFlag(c_CarryFlag, old_bit7);
+	setFlag(c_ZeroFlag, modified_byte == 0);
 	storeImmediateByte(r, modified_byte);
 }
 
 void GBC_CPU::SRA(const BYTE r) {
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	BYTE modified_byte = getByteByCode(r);
 	const BYTE old_bit0 = modified_byte & 1;
@@ -1495,24 +1517,24 @@ void GBC_CPU::SRA(const BYTE r) {
 
 	modified_byte = (modified_byte >> 1) | preserved_bit7;
 
-	if (old_bit0) c_F |= (1 << c_CarryFlag);
-	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	setFlag(c_CarryFlag, old_bit0);
+	setFlag(c_ZeroFlag, modified_byte == 0);
 	storeImmediateByte(r, modified_byte);
 }
 
 void GBC_CPU::SWAP(const BYTE r) {
 	// All four flags reset; C is reset (not preserved) — distinguishing it from the rotates/shifts.
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	BYTE modified_byte = getByteByCode(r);
 	modified_byte = (modified_byte << 4) | (modified_byte >> 4);
 
-	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	setFlag(c_ZeroFlag, modified_byte == 0);
 	storeImmediateByte(r, modified_byte);
 }
 
 void GBC_CPU::SRL(const BYTE r) {
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	BYTE modified_byte = getByteByCode(r);
 	const BYTE old_bit0 = modified_byte & 1;
@@ -1520,18 +1542,18 @@ void GBC_CPU::SRL(const BYTE r) {
 	// Logical shift right: bit 7 becomes 0 naturally.
 	modified_byte >>= 1;
 
-	if (old_bit0) c_F |= (1 << c_CarryFlag);
-	if (modified_byte == 0) c_F |= (1 << c_ZeroFlag);
+	setFlag(c_CarryFlag, old_bit0);
+	setFlag(c_ZeroFlag, modified_byte == 0);
 	storeImmediateByte(r, modified_byte);
 }
 
 void GBC_CPU::BIT(const BYTE b, const BYTE r) {
 	// Z = !bit, N = 0, H = 1, C = unchanged. Do not touch the carry flag.
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag));
-	c_F |= (1 << c_HalfCarryFlag);
+	setFlag(c_SubtractFlag, false);
+	setFlag(c_HalfCarryFlag, true);
 
 	const BYTE val = getByteByCode(r);
-	if (((val >> b) & 1) == 0) c_F |= (1 << c_ZeroFlag);
+	setFlag(c_ZeroFlag, ((val >> b) & 1) == 0);
 }
 
 void GBC_CPU::RES(const BYTE b, const BYTE r) {
@@ -1552,37 +1574,37 @@ void GBC_CPU::SET(const BYTE b, const BYTE r) {
 
 void GBC_CPU::RLCA() {
 	const BYTE old_bit7 = (c_A >> 7) & 1;
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	c_A = (c_A << 1) | old_bit7;
-	if (old_bit7) c_F |= (1 << c_CarryFlag);
+	setFlag(c_CarryFlag, old_bit7);
 	// Z forced to 0 — already cleared above.
 }
 
 void GBC_CPU::RRCA() {
 	const BYTE old_bit0 = c_A & 1;
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	c_A = (c_A >> 1) | (old_bit0 << 7);
-	if (old_bit0) c_F |= (1 << c_CarryFlag);
+	setFlag(c_CarryFlag, old_bit0);
 }
 
 void GBC_CPU::RLA() {
-	const BYTE old_carry = (c_F >> c_CarryFlag) & 1;
+	const bool old_carry = getFlag(c_CarryFlag);
 	const BYTE old_bit7 = (c_A >> 7) & 1;
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	c_A = (c_A << 1) | old_carry;
-	if (old_bit7) c_F |= (1 << c_CarryFlag);
+	setFlag(c_CarryFlag, old_bit7);
 }
 
 void GBC_CPU::RRA() {
-	const BYTE old_carry = (c_F >> c_CarryFlag) & 1;
+	const bool old_carry = getFlag(c_CarryFlag);
 	const BYTE old_bit0 = c_A & 1;
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	c_A = (c_A >> 1) | (old_carry << 7);
-	if (old_bit0) c_F |= (1 << c_CarryFlag);
+	setFlag(c_CarryFlag, old_bit0);
 }
 
 // ———————— End rotate-accumulator ops, begin control-flow and miscellaneous instructions ————————
@@ -1639,6 +1661,16 @@ void GBC_CPU::JR_cc_e(const BYTE cc) {
 	if (checkCondition(cc)) {
 		c_ProgramCounter += e;
 	}
+
+	if (c_ProgramCounter == 0x206 || c_ProgramCounter == 0x20F) {
+		/*if (e == -9) std::cout << "OUTER JR..." << std::endl;
+
+		std::cout
+	<< "JR @PC=" << std::hex << c_ProgramCounter
+	<< " JR cc=" << static_cast<int>(cc) << " Z=" << getFlag(c_ZeroFlag)
+	<< " taken=" << checkCondition(cc) << " e=" << static_cast<int>(e) << std::endl;*/
+	}
+
 }
 
 void GBC_CPU::CALL_nn() {
@@ -1703,7 +1735,7 @@ void GBC_CPU::storeByteByCode(const BYTE dest, const BYTE source) {
 			value = c_L;
 			break;
 		case 6:
-			value = c_H;
+			value = bus_.read8((c_H << 8) | c_L);
 			break;
 		case 7:
 			value = c_A;
@@ -1732,7 +1764,7 @@ void GBC_CPU::storeByteByCode(const BYTE dest, const BYTE source) {
 			c_L = value;
 			break;
 		case 6: // May need to be removed.
-			c_H = value;
+			bus_.write8((c_H << 8) | c_L, value);
 			break;
 		case 7:
 			c_A = value;
@@ -1811,8 +1843,8 @@ void GBC_CPU::storeImmediateByte(const BYTE dest, const BYTE imm) {
 		case 5:
 			c_L = imm;
 			break;
-		case 6: // May need to be removed.
-			c_H = imm;
+		case 6:
+			bus_.write8((c_H << 8) | c_L, imm);
 			break;
 		case 7:
 			c_A = imm;
@@ -1907,121 +1939,112 @@ BYTE GBC_CPU::getByteByCode(const BYTE source) {
 		case 5:
 			return c_L;
 		case 6:
-			return c_H;
+			return bus_.read8((c_H << 8) | c_L);
 		case 7:
 			return c_A;
 		default: // Throw an error
+			throw;
 	}
 }
 
 void GBC_CPU::generalAddInstruction(const BYTE source_val) {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	// Check half_carry and carry status, set bits if true.
 	const bool half_carry_val = ((c_A & 0xF) + (source_val & 0xF) & 0x10) != 0;
 	const bool carry_val = ((c_A & 0xFF) + (source_val & 0xFF) & 0x100) != 0;
 
-	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
-	if (carry_val) c_F |= 1 << c_CarryFlag;
+	setFlag(c_HalfCarryFlag, half_carry_val);
+	setFlag(c_CarryFlag, carry_val);
 
 	// Compute the sum
 	c_A = c_A + source_val;
 
 	// Check if the result is zero. If so, set.
-	if (c_A == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, c_A == 0);
 }
 
 void GBC_CPU::generalAdcInstruction(const BYTE source_val) {
 	// Save the carry bit before clearing.
-	const BYTE cy = (c_F >> c_CarryFlag) & 1;
+	const BYTE cy = getFlag(c_CarryFlag);
 
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	// Check half_carry and carry status, set bits if true.
 	const bool half_carry_val = ((c_A & 0xF) + (source_val & 0xF) + cy & 0x10) != 0;
 	const bool carry_val = ((c_A & 0xFF) + (source_val & 0xFF)  + cy & 0x100) != 0;
 
-	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
-	if (carry_val) c_F |= 1 << c_CarryFlag;
+	setFlag(c_HalfCarryFlag, half_carry_val);
+	setFlag(c_CarryFlag, carry_val);
 
 	// Compute the sum with carry.
 	c_A = c_A + source_val + cy;
 
 	// Check if the result is zero. If so, set.
-	if (c_A == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, c_A == 0);
 }
 
 void GBC_CPU::generalSubInstruction(const BYTE source_val) {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	// Check half_carry and carry status, set bits if true.
 	const bool half_carry_val = ((c_A & 0xF) - (source_val & 0xF) & 0x10) != 0;
 	const bool carry_val = ((c_A & 0xFF) - (source_val & 0xFF) & 0x100) != 0;
 
-	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
-	if (carry_val) c_F |= 1 << c_CarryFlag;
+	setFlag(c_HalfCarryFlag, half_carry_val);
+	setFlag(c_CarryFlag, carry_val);
 
 	// Compute the difference.
 	c_A = c_A - source_val;
 
 	// Check if the result is zero. If so, set.
-	if (c_A == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, c_A == 0);
 
 	// Set SubtractFlag to 1
-	c_F |= (1 << c_SubtractFlag);
+	setFlag(c_SubtractFlag, true);
 }
 
 void GBC_CPU::generalSbcInstruction(const BYTE source_val) {
-	const BYTE cy = (c_F >> c_CarryFlag) & 1;
+	const BYTE cy = getFlag(c_CarryFlag);
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	// Check half_carry and carry status, set bits if true.
 	const bool half_carry_val = ((c_A & 0xF) - (source_val & 0xF) - cy & 0x10) != 0;
 	const bool carry_val = ((c_A & 0xFF) - (source_val & 0xFF)  - cy & 0x100) != 0;
 
-	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
-	if (carry_val) c_F |= 1 << c_CarryFlag;
+	setFlag(c_HalfCarryFlag, half_carry_val);
+	setFlag(c_CarryFlag, carry_val);
 
 	// Complete the sum.
 	c_A = c_A - source_val - cy;
 
 	// Check if the result is zero. If so, set.
-	if (c_A  == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, c_A == 0);
 
 	// Set SubtractFlag to 1
-	c_F |= (1 << c_SubtractFlag);
+	setFlag(c_SubtractFlag, true);
 }
 
 void GBC_CPU::generalCprInstruction(const BYTE source_val) {
 	// Clear all bits
-	c_F &= ~((1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag));
+	clearFlags();
 
 	// Check half_carry and carry status, set bits if true.
 	const bool half_carry_val = ((c_A & 0xF) - (source_val & 0xF) & 0x10) != 0;
 	const bool carry_val = ((c_A & 0xFF) - (source_val & 0xFF) & 0x100) != 0;
 
-	if (half_carry_val) c_F |= 1 << c_HalfCarryFlag;
-	if (carry_val) c_F |= 1 << c_CarryFlag;
+	setFlag(c_HalfCarryFlag, half_carry_val);
+	setFlag(c_CarryFlag, carry_val);
 
 	// Compute difference and check if the result is zero. If so, set.
-	if (const BYTE result = c_A - source_val; result == 0) {
-		c_F |= (1 << c_ZeroFlag);
-	}
+	setFlag(c_ZeroFlag, (c_A - source_val) == 0);
 
 	// Set SubtractFlag to 1
-	c_F |= (1 << c_SubtractFlag);
+	setFlag(c_SubtractFlag, true);
 }
 
 // ### CB-prefixed dispatch ###
@@ -2033,7 +2056,7 @@ void GBC_CPU::generalCprInstruction(const BYTE source_val) {
 // So rather than enumerating 256 cases we decode fields and dispatch.
 
 void GBC_CPU::pushWord(const WORD val) {
-	c_StackPointer -= 2;
+	c_StackPointer -= 2; // Changed independently for testing, was 2 previously.
 	bus_.write16(c_StackPointer, val);
 }
 
@@ -2045,10 +2068,10 @@ WORD GBC_CPU::popWord() {
 
 bool GBC_CPU::checkCondition(const BYTE cc) const {
 	switch (cc) {
-		case c_CondNZ: return ((c_F >> c_ZeroFlag)  & 1) == 0;
-		case c_CondZ:  return ((c_F >> c_ZeroFlag)  & 1) == 1;
-		case c_CondNC: return ((c_F >> c_CarryFlag) & 1) == 0;
-		case c_CondC:  return ((c_F >> c_CarryFlag) & 1) == 1;
+		case c_CondNZ: return !getFlag(c_ZeroFlag);
+		case c_CondZ:  return  getFlag(c_ZeroFlag);
+		case c_CondNC: return !getFlag(c_CarryFlag);
+		case c_CondC:  return  getFlag(c_CarryFlag);
 		default: return false;
 	}
 }
