@@ -4,11 +4,13 @@
 
 #ifndef KEHINDES_GAMEBOYCOLOR_EMULATOR_GB_MMU_H
 #define KEHINDES_GAMEBOYCOLOR_EMULATOR_GB_MMU_H
-#include "GBC_CPU.h"
+
+#include "GBC_Types.h"
 #include "GBC_CART.h"
 #include "GBC_PPU.h"
 #include <array>
-
+#include <iostream>
+#include <stdexcept>
 
 /*
  * Address banking:
@@ -28,24 +30,6 @@
  * 0xFFFF: IE (interrupt enable)
  */
 
-#include "GBC_CPU.h"
-
-using BYTE = uint8_t;
-using WORD = uint16_t;
-using DWORD = uint32_t;
-
-enum class Interrupt : BYTE {VBlank, LCDStat, Timer, Serial, Joypad};
-
-struct IBus { // Interface for the CPU to access memory of components
-							// and for component memory implementations.
-	virtual ~IBus() = default;
-
-	virtual BYTE read8(WORD addr) = 0;
-	virtual void write8(WORD addr, BYTE val) = 0;
-
-	virtual WORD read16(WORD addr) = 0;
-	virtual void write16(WORD addr, WORD val) = 0;
-};
 
 class GBC_BUS final : public IBus {
 public:
@@ -73,17 +57,25 @@ public:
 	const CgbState& cgb() const;
 
 private:
-	GBC_CART& cart_; 
-	GBC_PPU& ppu_;
 	// TODO: Include all other components later.
 
 	// ---- Memory objects ----:
 	std::array<BYTE, 0x8000> mmu_WorkRAM_{};
 	std::array<BYTE, 0x007F> mmu_HighRAM_{};
+	std::array<BYTE, 0x900> mmu_BootROM_{};
 
 	// Interrupt registers
 	BYTE IF_ = 0xE1; // FF0F
 	BYTE IE_ = 0x00; // FFFF
+
+	GBC_CART& cart_;
+	GBC_PPU& ppu_;
+	CgbState cgb_;
+
+	// Other members
+	bool bootROM_enabled_ = false;
+	std::array<BYTE, 0x80> mmu_IO_{};
+	BYTE sb_ = 0;
 
 	// ---- Helpers
 	BYTE read_io(WORD addr);
@@ -96,7 +88,7 @@ private:
 	void write_hram(WORD addr, BYTE val);
 
 	// Address decoding helper
-	bool is_unusuable(WORD addr) const; // Between FEA0 - FEFF
+	// bool is_unusuable(WORD addr) const; // Between FEA0 - FEFF
 };
 
 
