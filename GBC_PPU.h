@@ -4,7 +4,8 @@
 
 #pragma once
 
-#include "GBC_BUS.h"
+#include "GBC_Types.h"
+#include "array"
 
 // Type Aliases
 constexpr int ppu_LCDC = 0xFF40; // LCD Control
@@ -29,26 +30,26 @@ constexpr int ppu_VBK = 0xFF4F; // VRAM Bank Select (0 or 1)
 
 class GBC_PPU {
 public:
-	WORD read(WORD addr);
+
+	GBC_PPU() = default;
+	BYTE read(WORD addr);
 	void write(WORD addr, BYTE val);
 
-	GBC_PPU();
 
 private:
+	std::array<std::array<BYTE, 0x2000>, 2> ppu_VRAM;
+	std::array<BYTE, 0x2000> ppu_OAM;
 
-	BYTE ppu_VRAM[2][0x2000];
-	BYTE ppu_ORAM[0xA0];
+	std::array<BYTE, 64> bg_palette_ram;
+	std::array<BYTE, 64> obj_palette_ram;
 
-	BYTE bg_palette_ram[64];
-	BYTE obj_palette_ram[64];
+	std::array<BYTE, 160 * 144> framebuffer;
 
 	// State Tracking
 	int cycles; // Dot clock counter. TODO: Timer schema still needed.
 	BYTE mode; // 0 = HBlank, 1 = VBlank, 2 = OAM Scan, 3 = Drawing
 	BYTE window_line; // Internal window line counter (NOT the same as LY)
 	bool frame_ready; // Signal to host that a frame is complete
-
-	DWORD framebuffer[160 * 144];
 
 	// Mode Handling
 	void tick_oam_scan();
