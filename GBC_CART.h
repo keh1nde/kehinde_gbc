@@ -15,7 +15,10 @@
  */
 
 #pragma once
-#include "GBC_CPU.h"
+#include "GBC_Types.h"
+#include <string>
+#include <array>
+#include <iostream>
 
 /*
  * For the Cart constructor:
@@ -29,17 +32,17 @@
 class GBC_CART {
 public:
 	// Initializers
-	GBC_CART(int c_CartridgeRAM, int c_CartridgeROM);
+	explicit GBC_CART(const std::string& romPath);
 	BYTE read_rom(WORD addr) const;
 	void write_rom(WORD addr, BYTE input);
 
 	BYTE read_ram(WORD addr);
-	BYTE write_ram(WORD addr, BYTE input);
+	void write_ram(WORD addr, BYTE input);
 
 
 private:
 	// Storage
-	BYTE c_CartridgeRAM[0xFFFF];
-	BYTE c_CartridgeROM[0xFFFF];
+	std::array<BYTE, 0xFFFF> c_CartridgeRAM;
+	std::array<BYTE, 0xFFFF> c_CartridgeROM;
 };
 
