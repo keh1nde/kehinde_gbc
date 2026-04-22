@@ -6,56 +6,26 @@
 
 #include <cstdint>
 #include <string>
-#include "GBC_BUS.h"
+#include "GBC_Types.h"
+#include <sstream>
 
+// Mask of the four live flag bits in F (Z, N, H, C at bits 7/6/5/4).
+// The low nibble of F is always zero on real hardware.
+constexpr BYTE c_AllFlagsMask =
+	(1 << c_ZeroFlag) | (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag) | (1 << c_CarryFlag);
 
-/*
- * For future reference:
- * Reading a bit: (c_F >> c_AnyFlag) & 1
- * Setting a bit: c_F |= (1 << c_AnyFlag)
- * Clearing a bit: c_F &= ~(1 << c_AnyFlag)
- * Assign computed truth value to bit: (c_F &= ~mask; if (cond) c_F |= mask;)
- */
-// Type Aliases
-
-constexpr int c_ZeroFlag      = 7;
-constexpr int c_SubtractFlag  = 6;
-constexpr int c_HalfCarryFlag = 5;
-constexpr int c_CarryFlag     = 4;
-
-constexpr int c_PairBC = 0;
-constexpr int c_PairDE = 1;
-constexpr int c_PairHL = 2;
-constexpr int c_PairSP = 3;
-// rp2 table: code 3 means AF instead of SP. Numerically collides with c_PairSP —
-// callers must route through the RP2-flavored helpers (getPairByCode2 / storeImmediateWordRP2).
-constexpr int c_PairAF = 3;
-
-// Condition code table (cc, 2 bits): 0=NZ, 1=Z, 2=NC, 3=C. Used by JP cc/JR cc/CALL cc/RET cc.
-constexpr int c_CondNZ = 0;
-constexpr int c_CondZ  = 1;
-constexpr int c_CondNC = 2;
-constexpr int c_CondC  = 3;
-
-constexpr int c_RegB = 0;
-constexpr int c_RegC = 1;
-constexpr int c_RegD = 2;
-constexpr int c_RegE = 3;
-constexpr int c_RegH = 4;
-constexpr int c_RegL = 5;
-constexpr int c_RegHL = 6;
-constexpr int c_RegA = 7;
 
 class GBC_CPU {
 public:
 	// Class Methods
-	explicit GBC_CPU(const GBC_BUS& bus); // aka the initializer/reset.
+	explicit GBC_CPU(IBus& bus); // aka the initializer/reset.
 	void execute();
 	void executeCB();
-
+	void resetPostBoot();
+	WORD c_ProgramCounter; // public for debugging
 
 private:
-	WORD c_ProgramCounter;
+
 	WORD c_StackPointer;
 
 	// Registers
@@ -78,7 +48,29 @@ private:
 	bool c_Halted = false;
 
 	// RAM
-	GBC_BUS bus_;
+	IBus& bus_;
+
+
+	// ---- Flag helpers ----
+
+	/**
+	 * @brief Clears all four flag bits (Z/N/H/C) in F. Low nibble of F is untouched (already zero on hardware).
+	 */
+	void clearFlags();
+
+	/**
+	 * @brief Writes the given boolean to the flag bit at position `bit` in F.
+	 * @param bit Flag bit position (use c_ZeroFlag / c_SubtractFlag / c_HalfCarryFlag / c_CarryFlag).
+	 * @param on True to set the bit, false to clear it.
+	 */
+	void setFlag(BYTE bit, bool on);
+
+	/**
+	 * @brief Reads the flag bit at position `bit` from F.
+	 * @param bit Flag bit position (use c_ZeroFlag / c_SubtractFlag / c_HalfCarryFlag / c_CarryFlag).
+	 * @return True if the bit is set, false otherwise.
+	 */
+	bool getFlag(BYTE bit) const;
 
 
 	// Helper Functions
@@ -314,7 +306,7 @@ private:
 	* @brief Load to the address specified by the 8-bit C register, data from the 8-bit A register. The full
 	* 16-bit absolute address is obtained by setting the most significant byte to 0xFF and the least
 	* significant byte to the value of C, so the possible range is 0xFF00-0xFFFF.
-	* @post The C register now holds data from a memory address 0xFF + A.
+	* @post The accumulator register now holds data from a memory address 0xFF + A.
 	 */
 	void LDH_C_A();
 
@@ -322,7 +314,7 @@ private:
 	* @brief Load to the 8-bit A register, data from the address specified by the 8-bit immediate data n. The
 	* full 16-bit absolute address is obtained by setting the most significant byte to 0xFF and the
 	* least significant byte to the value of n, so the possible range is 0xFF00-0xFFFF.
-	* @post The C register now holds data from a memory address 0xFF + N
+	* @post The accumulator register now holds data from a memory address 0xFF + N
 	*/
 	void LDH_A_n();
 
