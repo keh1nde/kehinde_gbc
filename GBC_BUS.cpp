@@ -4,15 +4,29 @@
 
 #include "GBC_BUS.h"
 
-GBC_BUS::GBC_BUS(const std::string &bootPath, GBC_CART &cart, GBC_PPU& ppu) : cart_(cart),  ppu_(ppu) {
-	// Load BootROM.
-	FILE* file = fopen(bootPath.c_str(),"rb");
-	int b_pos = 0x0000;
-	while (fread(&mmu_WorkRAM_[b_pos], 1, 1, file)) {
-		b_pos++;
-	}
+#include "GBC_CART.h"
+#include "GBC_PPU.h"
 
-	fclose(file);
+GBC_BUS::GBC_BUS(const std::string &bootPath, GBC_CART& cart, GBC_PPU& ppu) : cart_(cart), ppu_(ppu) {
+	// Load BootROM.
+	if (!bootPath.empty()) {
+		FILE* file = fopen(bootPath.c_str(),"rb");
+		if (!file) {
+			throw std::runtime_error("Could not open boot ROM file");
+		}
+
+		fseek(file, 0, SEEK_END);
+		const long size = ftell(file);
+
+		fseek(file, 0, SEEK_SET);
+		if (size > mmu_BootROM_.size()) throw std::runtime_error("ROM size exceeds register size.");
+
+		fread(mmu_BootROM_.data(), 1, size, file);
+		fclose(file);
+
+		bootROM_enabled_ = true;
+	}
+	return;
 }
 
 
@@ -35,80 +49,109 @@ GBC_BUS::GBC_BUS(const std::string &bootPath, GBC_CART &cart, GBC_PPU& ppu) : ca
  */
 
 BYTE GBC_BUS::read8(const WORD addr) {
-	// This method must evaluate the 16 bit addr given as input and check it against the previous bounds.
-	// If the address is within a certain bound, then we either read directly or call the device's read
-	// method.
-
+	// ROM Bank 00
 	if (addr < 0x8000) {
-		//Properly implement cartridge.read_rom(addr)
+		return cart_.read_rom(addr);
+	}
+
+	if (addr < 0xA000 && addr >= 0x8000) {
 		return ppu_.read(addr);
 	}
-	else if (addr < 0xA000) {
-		// Implement ppu.read_vram(addr)
+
+	// 8 KiB External RAM
+	if (addr < 0xC000 && addr >= 0xA000) {
+		return cart_.read_ram(addr);
+	}
+
+	// 8 KiB Work RAM (Bank 1 + Bank 2 collapsed — 0xC000-0xDFFF indexes into mmu_WorkRAM_[0..0x1FFF])
+	if (addr < 0xE000 && addr >= 0xC000) {
+		return mmu_WorkRAM_[addr - 0xC000];
+	}
+
+	// Echo RAM, inaccessible, but mirror WorkRAM
+	if (addr < 0xFE00 && addr >= 0xE000) {
+		return mmu_WorkRAM_[addr - 0xE000];
+	}
+
+	// Object Attribute Memory
+	if (addr < 0xFEA0 && addr >= 0xFE00) {
 		return ppu_.read(addr);
 	}
-	else if (addr < 0xC000) {
-		return mmu_WorkRAM_[addr];
+
+	// Not usable
+	if (addr < 0xFF00 && addr >= 0xFEA0) {
+		return 0xFF;
 	}
-	else if (addr < 0xE000) {
-		// Echo RAM mirror, not directly accessible
-	}
-	else if (addr < 0xFEA0) {
-		// Implement ppu.read_oam(addr)
-		return ppu_.read(addr);
-	}
-	else if (addr < 0xFF00) {
-		// Implement exception
-	}
-	else if (addr < 0xFF80) {
-		// Implement read_io(addr)
+
+	// I/O Registers
+	if (addr < 0xFF80 && addr >= 0xFF00) {
 		return read_io(addr);
 	}
-	else if (addr < 0xFFFF) {
-		// Implement hram[addr] access
+
+	// High RAM
+	if (addr < 0xFFFF && addr >= 0xFF80) {
 		return read_hram(addr);
-	}
-	else {
-		// TODO: Implement interrupts
-	}
+	} else return IE_;
 }
 
 void GBC_BUS::write8(const WORD addr, const BYTE val) {
+	if (addr == 0xFF01) {
+		sb_ = val;
+	}
+	// ROM Bank from 00 to NN
 	if (addr < 0x8000) {
-		// Implement cartridge.write_ram(addr)
-		ppu_.write(addr);
+		cart_.write_rom(addr, val);
+		return;
 	}
-	else if (addr < 0xA000) {
-		// Implement ppu.write_vram(addr)
-		ppu_.write(addr);
-	}
-	else if (addr < 0xC000) {
-		// TODO: Figure out c_WorkRAM write implementation
-		mmu_WorkRAM_[addr] = val;
-	}
-	else if (addr < 0xE000) {
-		// Echo RAM mirror, not directly accessible
-	}
-	else if (addr < 0xFEA0) {
-		// Implement ppu.write_oam(addr)
-		ppu_.write(addr, val);
-	}
-	else if (addr < 0xFF00) {
-		// TODO: Implement exception
-	}
-	else if (addr < 0xFF80) {
-		// Implement write_io(addr)
-		write_io(addr, val);
-	}
-	else if (addr < 0xFFFF) {
-		// TODO: Implement hram[addr] access
-		mmu_HighRAM_[addr] = val;
-	}
-	else {
-		// TODO: Implement interrupts
-	}
-}
 
+	if (addr < 0xA000 && addr >= 0x8000) {
+		ppu_.write(addr, val);
+		return;
+	}
+	// 8 KiB External RAM
+	if (addr < 0xC000 && addr >= 0xA000) {
+		cart_.write_ram(addr, val);
+		return;
+	}
+
+	// 8 KiB Work RAM (Bank 1 + Bank 2 collapsed)
+	if (addr < 0xE000 && addr >= 0xC000) {
+		mmu_WorkRAM_[addr - 0xC000] = val;
+		return;
+	}
+
+	// Echo RAM, inaccessible
+	if (addr < 0xFE00 && addr >= 0xE000) {
+		mmu_WorkRAM_[addr - 0xE000] = val; // Mirror of WorkRAM
+		return;
+	}
+
+	// Object Attribute Memory
+	if (addr < 0xFEA0 && addr >= 0xFE00) {
+		ppu_.write(addr, val);
+		return;
+	}
+
+	// Not usable
+	if (addr < 0xFF00 && addr >= 0xFEA0) {
+		return;
+	}
+
+	// I/O Registers
+	if (addr < 0xFF80 && addr >= 0xFF00) {
+		write_io(addr, val);
+		return;
+	}
+
+	// High RAM
+	if (addr < 0xFFFF && addr >= 0xFF80) {
+		write_hram(addr, val); // May expect an offset.
+		return;
+	}
+
+	// Interrupt Register
+	if (addr == 0xFFFF) IE_ = val;
+}
 
 // TODO: Extend implementation to read16 and write16
 
@@ -125,3 +168,56 @@ void GBC_BUS::write16(const WORD addr, const WORD val) {
 	write8(addr, val & 0xFF);
 	write8(addr + 1, val >> 8);
 }
+
+
+// ———————— End Memory Management, begin Hardware Management ————————
+
+void GBC_BUS::tick(int cycles) {
+
+}
+
+void GBC_BUS::request_interrupt(Interrupt which) {
+
+}
+
+void GBC_BUS::reset() {
+
+}
+GBC_BUS::CgbState& GBC_BUS::cgb() {
+	return cgb_;
+}
+const GBC_BUS::CgbState& GBC_BUS::cgb() const {
+	return cgb_;
+}
+
+// ———————— End Hardware Management, begin Helpers ————————
+
+BYTE GBC_BUS::read_io(const WORD addr) {
+	if (addr == 0xFF01) {
+		return sb_;
+	}
+	return mmu_IO_[addr - 0xFF00];
+}
+void GBC_BUS::write_io(const WORD addr, const BYTE val) {
+	if (addr == 0xFF01) {
+		sb_ = val;
+	}
+	mmu_IO_[addr - 0xFF00] = val;
+}
+
+BYTE GBC_BUS::read_wram(const WORD addr) const {
+	return mmu_WorkRAM_[addr];
+}
+void GBC_BUS::write_wram(const WORD addr, const BYTE val) {
+	mmu_WorkRAM_[addr] = val;
+}
+
+BYTE GBC_BUS::read_hram(const WORD addr) const {
+	return mmu_HighRAM_[addr];
+}
+void GBC_BUS::write_hram(const WORD addr, const BYTE val) {
+	mmu_HighRAM_[addr] = val;
+}
+
+// Address decoding helper
+// bool is_unusuable(WORD addr) const; // Between FEA0 - FEFF
