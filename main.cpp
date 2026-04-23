@@ -2,7 +2,14 @@
 #include "GBC_CPU.h"
 #include "GBC_PPU.h"
 #include "GBC_CART.h"
+#include "TestBus.h"
+#include "TestCart.h"
 
+/*
+ * Hypotheses:
+ * 1. The read and write methods aren't declared in CPU, but in Bus. The CPU uses IBus but the
+ *
+ */
 
 int main(int argc, char* argv[]) {
 
@@ -14,24 +21,14 @@ int main(int argc, char* argv[]) {
 
 	GBC_CPU cpu(bus);
 
-	for (WORD a = 0x207; a <= 0x20C; ++a) {
-		std::cerr << std::hex << a << ": " << static_cast<int>(cart.read_rom(a)) << "\n";
-	}
 
 	cpu.resetPostBoot();
-
-	/*std::cerr << "ROM[0X7000]=" << std::hex <<
-		static_cast<int>(cart.read_rom(0x7000)) << std::endl;
-	std::cerr << "ROM(0x7FFF)=" << std::hex <<
-		static_cast<int>(cart.read_rom(0x7FFF)) << std::endl;*/
-
-	std::cerr << "Starting execution, PC=" << std::hex << cpu.c_ProgramCounter << std::endl;
-	for (int i = 0; i < 49200; ++i) {
+	for (int i = 0; i < 50000000; ++i) {
 		try {
-			// if (i % 100000 == 0) std::cout << "Current PC address: " << std::hex << cpu.c_ProgramCounter << std::endl;
 			cpu.execute();
 		} catch (const std::exception& e) {
 			std::cerr << "[i=" << i << "] "<< "Caught the following error:" << e.what() << std::endl;
+			break;
 		}
 	}
 }
