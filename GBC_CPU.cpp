@@ -34,30 +34,43 @@ BYTE GBC_CPU::getNextOpcode() {
 }
 
 void GBC_CPU::resetPostBoot() {
-	storeImmediateWordRP2(c_PairAF, 0x1180);
+	storeImmediateWordRP2(c_PairAF, 0x01B0);
+	storeImmediateWord(c_PairBC, 0x0013);
+	storeImmediateWord(c_PairDE, 0x00D8);
+	storeImmediateWord(c_PairHL, 0x014D);
+
+	/* For the CGB:
+	 *storeImmediateWordRP2(c_PairAF, 0x1180);
 	storeImmediateWord(c_PairBC, 0x0000);
 	storeImmediateWord(c_PairDE, 0xFF56);
-	storeImmediateWord(c_PairHL, 0x000D);
+	storeImmediateWord(c_PairHL, 0x000D);*/
 
 	c_StackPointer = 0xFFFE;
 	c_ProgramCounter = 0x0100;
 
 	c_IME = false;
 	c_Halted = false;
+}
 
+void GBC_CPU::resetPostBootARegister() {
+	storeImmediateWordRP2(c_PairAF, 0x4480);
+	storeImmediateWord(c_PairBC, 0x0000);
+	storeImmediateWord(c_PairDE, 0xFF56);
+	storeImmediateWord(c_PairHL, 0x000D);
+	c_ProgramCounter = 0xC7B1;
 }
 
 void GBC_CPU::execute() {
+	/*std::printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X "
+								"SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n",
+				c_A, c_F, c_B, c_C, c_D, c_E, c_H, c_L,
+				c_StackPointer,  // SP — replace with whatever your SP member is named
+				c_ProgramCounter,
+				bus_.read8(c_ProgramCounter),
+				bus_.read8(c_ProgramCounter + 1),
+				bus_.read8(c_ProgramCounter + 2),
+				bus_.read8(c_ProgramCounter + 3));*/
 	const BYTE opcode = getNextOpcode();
-	/*std::cout << "Now executing: " << opcode << std::endl;
-	std::cout << "Also known in hex as" << (std::stringstream{} <<
-		std::hex << static_cast<int>(opcode)).str() << std::endl;*/
-	/*std::cout << "At this point the E register has the value: " << (std::stringstream{} <<
-		std::hex << static_cast<int>(c_E)).str() << std::endl;
-	std::cout << "At this point the Z flag has the value: " << (getFlag(c_ZeroFlag) ? "True" : "False") << std::endl;
-	std::cout << "The Program Counter is at the following address: " << (std::stringstream{} <<
-		std::hex << static_cast<int>(c_ProgramCounter)).str() << std::endl;*/
-
 	if (opcode == 0xCB) {
 		executeCB();
 		return;
@@ -810,10 +823,17 @@ void GBC_CPU::execute() {
 		case 0x2E:
 			LD_r_n(c_RegL);
 			break;
+		case 0x40:
+			LD_r_reg(c_RegB, c_RegB);
+			break;
+		case 0xD6:
+			SUB_n();
+			break;
 		default:
 			throw std::runtime_error("Unimplemented opcode: 0x" +
 				(std::stringstream{} << std::hex << static_cast<int>(opcode)).str());
 	}
+
 }
 
 
@@ -856,8 +876,8 @@ void GBC_CPU::LD_r_reg(const BYTE dest, const BYTE source) {
 }
 
 void GBC_CPU::LD_r_n(const BYTE dest) {
-	const int immediate = getNextOpcode();
-	storeByteByCode(dest, immediate);
+	const BYTE immediate = getNextOpcode();
+	storeImmediateByte(dest, immediate);
 }
 
 void GBC_CPU::LD_r_HL(const BYTE dest) {
@@ -922,16 +942,16 @@ void GBC_CPU::LD_DE_A() {
 }
 
 void GBC_CPU::LD_A_nn() {
-	const BYTE high = getNextOpcode();
 	const BYTE low = getNextOpcode();
+	const BYTE high = getNextOpcode();
 	const WORD immediate = (high << 8) | low;
 
 	c_A = bus_.read8(immediate);
 }
 
 void GBC_CPU::LD_nn_A() {
-	const BYTE high = getNextOpcode();
 	const BYTE low = getNextOpcode();
+	const BYTE high = getNextOpcode();
 	const WORD address = (high << 8) | low;
 
 	bus_.write8(address, c_A);
@@ -1033,18 +1053,18 @@ void GBC_CPU::LD_HLinc_A() {
 // ———————— End 8-bit load instructions, begin 16-bit load instructions ————————
 
 void GBC_CPU::LD_rr_nn(const BYTE rr) {
-	const BYTE nn_lsb = getNextOpcode();
-	const BYTE nn_msb = getNextOpcode();
+	const BYTE low = getNextOpcode();
+	const BYTE high = getNextOpcode();
 
-	const WORD imm = (nn_msb << 8) | nn_lsb;
+	const WORD imm = (high << 8) | low;
 
 	storeImmediateWord(rr, imm);
 }
 
 void GBC_CPU::LD_nn_SP() {
-	const BYTE nn_lsb = getNextOpcode();
-	const BYTE nn_msb = getNextOpcode();
-	const WORD address = (nn_msb << 8) | nn_lsb;
+	const BYTE low = getNextOpcode();
+	const BYTE high = getNextOpcode();
+	const WORD address = (high << 8) | low;
 
 	bus_.write16(address, c_StackPointer);
 }
@@ -1166,77 +1186,63 @@ void GBC_CPU::CP_n() {
 }
 
 void GBC_CPU::INC_r(const BYTE dest) {
-	// Clear all bits
+	const BYTE pre = getByteByCode(dest);
+	const BYTE post = pre + 1;
+	const bool h = (((pre & 0x0F) + 1) & 0x10) != 0;
+
+	const bool c = getFlag(c_CarryFlag);
 	clearFlags();
-	const BYTE source_val = getByteByCode(dest) + 1;
+	setFlag(c_CarryFlag, c);
+	setFlag(c_HalfCarryFlag, h);
+	setFlag(c_ZeroFlag, post == 0);
 
-	// Check half_carry and set bits if true.
-	const bool half_carry_val = ((source_val & 0xF) + (1 & 0xF) & 0x10) != 0;
-	// const bool carry_val = ((source_val & 0xFF) + (1 & 0xFF) & 0x100) != 0;
-
-	setFlag(c_HalfCarryFlag, half_carry_val);
-	// setFlag(c_CarryFlag, carry_val);
-
-	setFlag(c_ZeroFlag, source_val == 0);
-
-	storeImmediateByte(dest, source_val);
+	storeImmediateByte(dest, post);
 }
 
 void GBC_CPU::INC_HL() {
-	// Clear all bits
+	const WORD addr = (c_H << 8) | c_L;
+	const BYTE pre = bus_.read8(addr);
+	const BYTE post = pre + 1;
+	const bool h = (((pre & 0x0F) + 1) & 0x10) != 0;
+
+	const bool c = getFlag(c_CarryFlag);
 	clearFlags();
-	const BYTE source_val = bus_.read8((c_H << 8) | c_L) + 1;
+	setFlag(c_CarryFlag, c);
+	setFlag(c_HalfCarryFlag, h);
+	setFlag(c_ZeroFlag, post == 0);
 
-	// Check half_carry and carry status, set bits if true.
-	const bool half_carry_val = ((source_val & 0xF) + (1 & 0xF) & 0x10) != 0;
-	const bool carry_val = ((source_val & 0xFF) + (1 & 0xFF) & 0x100) != 0;
-
-	setFlag(c_HalfCarryFlag, half_carry_val);
-	setFlag(c_CarryFlag, carry_val);
-
-	setFlag(c_ZeroFlag, source_val == 0);
-
-	bus_.write8((c_H << 8) | c_L, source_val);
+	bus_.write8(addr, post);
 }
 
 void GBC_CPU::DEC_r(const BYTE dest) {
-	// Clear all bits
+	const BYTE pre = getByteByCode(dest);
+	const BYTE post = pre - 1;
+	const bool h = (pre & 0x0F) == 0;
+
+	const bool c = getFlag(c_CarryFlag);
 	clearFlags();
-
-	const BYTE source_val = getByteByCode(dest) - 1;
-
-	const bool half_carry_val = ((source_val & 0xF) - (1 & 0xF) & 0x10) != 0;
-	// const bool carry_val = ((source_val & 0xFF) - (1 & 0xFF) & 0x100) != 0;
-
-	setFlag(c_HalfCarryFlag, half_carry_val);
-	// setFlag(c_CarryFlag, carry_val);
-
-	setFlag(c_ZeroFlag, source_val == 0);
-
-	// Set SubtractFlag to 1
+	setFlag(c_CarryFlag, c);
+	setFlag(c_HalfCarryFlag, h);
+	setFlag(c_ZeroFlag, post == 0);
 	setFlag(c_SubtractFlag, true);
 
-	storeImmediateByte(dest, source_val);
+	storeImmediateByte(dest, post);
 }
 
 void GBC_CPU::DEC_HL() {
-	// Clear all bits
+	const WORD addr = (c_H << 8) | c_L;
+	const BYTE pre = bus_.read8(addr);
+	const BYTE post = pre - 1;
+	const bool h = (pre & 0x0F) == 0;
+
+	const bool c = getFlag(c_CarryFlag);
 	clearFlags();
-
-	const BYTE source_val = bus_.read8((c_H << 8) | c_L) - 1;
-
-	const bool half_carry_val = ((source_val & 0xF) - (1 & 0xF) & 0x10) != 0;
-	// const bool carry_val = ((source_val & 0xFF) - (1 & 0xFF) & 0x100) != 0;
-
-	setFlag(c_HalfCarryFlag, half_carry_val);
-	// setFlag(c_CarryFlag, carry_val);
-
-	setFlag(c_ZeroFlag, source_val == 0);
-
-	// Set SubtractFlag to 1
+	setFlag(c_CarryFlag, c);
+	setFlag(c_HalfCarryFlag, h);
+	setFlag(c_ZeroFlag, post == 0);
 	setFlag(c_SubtractFlag, true);
 
-	bus_.write8((c_H << 8) | c_L, source_val);
+	bus_.write8(addr, post);
 }
 
 void GBC_CPU::AND_r(const BYTE source) {
