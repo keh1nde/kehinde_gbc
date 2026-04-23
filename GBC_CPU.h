@@ -22,6 +22,7 @@ public:
 	void execute();
 	void executeCB();
 	void resetPostBoot();
+	void resetPostBootARegister();
 	WORD c_ProgramCounter; // public for debugging
 
 private:
