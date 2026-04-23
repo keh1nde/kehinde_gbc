@@ -21,12 +21,7 @@ GBC_CART::GBC_CART(const std::string &romPath) {
 		fseek(file, 0, SEEK_SET);
 		if (size > c_CartridgeROM.size()) throw std::runtime_error("ROM size exceeds max size.");
 
-		// fread(c_CartridgeROM.data(), 1, size, file);
-
-		const size_t bytes_read = fread(c_CartridgeROM.data(), 1, size, file);
-		std::cerr << "bytes_read=" << bytes_read << "\n";
-		std::cerr << "byte @ 0x20D = 0x" << std::hex << static_cast<int>(c_CartridgeROM[0x20D]) << "\n";
-		std::cerr << "byte @ 0x7000 = 0x" << std::hex << static_cast<int>(c_CartridgeROM[0x7000]) << "\n";
+		fread(c_CartridgeROM.data(), 1, size, file);
 
 		fclose(file);
 	}
