@@ -144,7 +144,7 @@ void GBC_BUS::write8(const WORD addr, const BYTE val) {
 	}
 
 	// High RAM
-	if (addr < 0xFFFF && addr >= 0xFF80) {
+	if (addr < 0xFFFE && addr >= 0xFF80) {
 		write_hram(addr, val); // May expect an offset.
 		return;
 	}
@@ -193,16 +193,16 @@ const GBC_BUS::CgbState& GBC_BUS::cgb() const {
 // ———————— End Hardware Management, begin Helpers ————————
 
 BYTE GBC_BUS::read_io(const WORD addr) {
-	if (addr == 0xFF01) {
-		return sb_;
-	}
 	return mmu_IO_[addr - 0xFF00];
 }
 void GBC_BUS::write_io(const WORD addr, const BYTE val) {
-	if (addr == 0xFF01) {
-		sb_ = val;
-	}
 	mmu_IO_[addr - 0xFF00] = val;
+
+	if (addr == 0xFF02 && (val & 0x80)) {
+		std::cout << static_cast<char>(mmu_IO_[0x01]) << std::flush;
+		mmu_IO_[0x02] = val & 0x7F;
+
+	}
 }
 
 BYTE GBC_BUS::read_wram(const WORD addr) const {
