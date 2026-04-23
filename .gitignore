@@ -1,3 +1,8 @@
+# Testing Directories
+test-roms
+gameboy-doctor
+
+
 # Compiled object files
 *.o
 *.obj
