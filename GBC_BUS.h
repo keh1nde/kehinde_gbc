@@ -77,7 +77,8 @@ private:
 
 	// Other members
 	bool bootROM_enabled_ = false;
-	std::array<BYTE, 0x80> mmu_IO_{};
+
+
 	BYTE sb_ = 0;
 
 	// ---- Helpers
