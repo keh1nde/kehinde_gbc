@@ -1387,7 +1387,7 @@ void GBC_CPU::DAA() {
 }
 
 void GBC_CPU::CPL() {
-	c_F ^=  (1 << c_SubtractFlag) | (1 << c_HalfCarryFlag);
+	c_A = ~c_A;
 
 	// Set Subtract and Half-Carry flags
 	setFlag(c_SubtractFlag, true);
