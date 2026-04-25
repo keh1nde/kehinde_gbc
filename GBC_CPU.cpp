@@ -439,7 +439,7 @@ void GBC_CPU::execute() {
 			SUB_HL();
 			break;
 		case 0x97:
-			SBC_A_r(c_RegA);
+			SUB_r(c_RegA);
 			break;
 		case 0x98:
 			SBC_A_r(c_RegB);
