@@ -55,7 +55,8 @@ void GBC_CPU::resetPostBootARegister() {
 }
 
 void GBC_CPU::execute() {
-	/*std::printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X "
+	#ifdef trace
+	std::printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X "
 								"SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n",
 				c_A, c_F, c_B, c_C, c_D, c_E, c_H, c_L,
 				c_StackPointer,  // SP — replace with whatever your SP member is named
@@ -63,7 +64,8 @@ void GBC_CPU::execute() {
 				bus_.read8(c_ProgramCounter),
 				bus_.read8(c_ProgramCounter + 1),
 				bus_.read8(c_ProgramCounter + 2),
-				bus_.read8(c_ProgramCounter + 3));*/
+				bus_.read8(c_ProgramCounter + 3));
+	#endif
 	const BYTE opcode = getNextOpcode();
 	if (opcode == 0xCB) {
 		executeCB();
