@@ -34,16 +34,10 @@ BYTE GBC_CPU::getNextOpcode() {
 }
 
 void GBC_CPU::resetPostBoot() {
-	storeImmediateWordRP2(c_PairAF, 0x01B0);
-	storeImmediateWord(c_PairBC, 0x0013);
-	storeImmediateWord(c_PairDE, 0x00D8);
-	storeImmediateWord(c_PairHL, 0x014D);
-
-	/* For the CGB:
-	 *storeImmediateWordRP2(c_PairAF, 0x1180);
+	storeImmediateWordRP2(c_PairAF, 0x1180);
 	storeImmediateWord(c_PairBC, 0x0000);
 	storeImmediateWord(c_PairDE, 0xFF56);
-	storeImmediateWord(c_PairHL, 0x000D);*/
+	storeImmediateWord(c_PairHL, 0x000D);
 
 	c_StackPointer = 0xFFFE;
 	c_ProgramCounter = 0x0100;
