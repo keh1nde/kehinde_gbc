@@ -23,11 +23,11 @@ public:
 	void executeCB();
 	void resetPostBoot();
 	void resetPostBootARegister();
-	WORD c_ProgramCounter; // public for debugging
 
 private:
 
 	WORD c_StackPointer;
+	WORD c_ProgramCounter;
 
 	// Registers
 	BYTE c_A;
@@ -38,6 +38,7 @@ private:
 	BYTE c_H;
 	BYTE c_F;
 	BYTE c_L;
+
 
 	// Interrupt master enable. DI clears it, EI sets it (delayed-by-one semantics not modeled yet),
 	// RETI sets it. Not yet consulted by an interrupt-servicing loop — the bit is just maintained.
