@@ -3,7 +3,7 @@
 //
 
 #include "GBC_BUS.h"
-
+#include "GBC_Types.h"
 #include "GBC_CART.h"
 #include "GBC_PPU.h"
 
