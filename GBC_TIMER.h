@@ -1,0 +1,16 @@
+//
+// Created by Kehinde Adeoso on 5/4/26.
+//
+
+#ifndef KEHINDES_GAMEBOYCOLOR_EMULATOR_GBC_TIMER_H
+#define KEHINDES_GAMEBOYCOLOR_EMULATOR_GBC_TIMER_H
+
+
+
+class GBC_TIMER {
+
+};
+
+
+
+#endif //KEHINDES_GAMEBOYCOLOR_EMULATOR_GBC_TIMER_H
