@@ -33,13 +33,6 @@
 
 class GBC_BUS final : public IBus {
 public:
-	struct CgbState { // May not be needed
-		bool is_cgb = false;
-
-		BYTE vbk = 0;
-		BYTE svbk = 1;
-		BYTE key1 = 0;
-	};
 
 	GBC_BUS(const std::string& bootPath, GBC_CART& cart, GBC_PPU& ppu); // Include all other components later.
 
