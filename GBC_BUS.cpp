@@ -173,8 +173,8 @@ void GBC_BUS::tick(int cycles) {
 
 }
 
-void GBC_BUS::request_interrupt(Interrupt which) {
-
+void GBC_BUS::requestInterrupt(Interrupt which) {
+	IF_ |= (1 << static_cast<int>(which));
 }
 
 void GBC_BUS::reset() {
