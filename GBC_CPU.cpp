@@ -54,7 +54,14 @@ void GBC_CPU::resetPostBootARegister() {
 	c_ProgramCounter = 0xC7B1;
 }
 
-void GBC_CPU::execute() {
+int GBC_CPU::execute() {
+	/*static bool first = true;
+	if (first) {
+		std::cerr << "first execute: A=0x" << std::hex << static_cast<int>(c_A)
+							<< " PC=0x" << static_cast<int>(c_ProgramCounter) << "\n";
+		first = false;
+	}*/
+
 	#ifdef trace
 	std::printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X "
 								"SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n",
