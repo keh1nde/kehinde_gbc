@@ -186,9 +186,30 @@ void GBC_BUS::reset() {
 // ———————— End Hardware Management, begin Helpers ————————
 
 BYTE GBC_BUS::read_io(const WORD addr) {
+	if (addr <= 0xFF07 && addr >= 0xFF04) return timer_.read(addr);
+	if (addr == 0xFF0F) return IF_ | 0xE0;
+
+	// PPU-owned registers
+	if (addr >= 0xFF40 && addr <= 0xFF4B && addr != 0xFF46) return ppu_.read(addr);
+	if (addr == 0xFF4F) return ppu_.read(addr);
+	if (addr >= 0xFF68 && addr <= 0xFF6B) return ppu_.read(addr);
+	if (addr == 0xFF6C) return ppu_.read(addr);
+
 	return mmu_IO_[addr - 0xFF00];
 }
 void GBC_BUS::write_io(const WORD addr, const BYTE val) {
+	if (addr <= 0xFF07 && addr >= 0xFF04) { timer_.write(addr, val); return; }
+	if (addr == 0xFF0F) {
+		IF_ = val & 0x1F;
+		return;
+	}
+
+	// PPU-owned registers
+	if (addr >= 0xFF40 && addr <= 0xFF4B && addr != 0xFF46) { ppu_.write(addr, val); return; }
+	if (addr == 0xFF4F)                                    { ppu_.write(addr, val); return; }
+	if (addr >= 0xFF68 && addr <= 0xFF6B)                  { ppu_.write(addr, val); return; }
+	if (addr == 0xFF6C)                                    { ppu_.write(addr, val); return; }
+
 	mmu_IO_[addr - 0xFF00] = val;
 
 	if (addr == 0xFF02 && (val & 0x80)) {
