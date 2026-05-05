@@ -27,6 +27,7 @@ constexpr int ppu_BGPD = 0xFF69; // BG Palette Data
 constexpr int ppu_OBPI = 0xFF6A; // OBJ Palette Index
 constexpr int ppu_OBPD = 0xFF6B; // OBJ Palette Data
 constexpr int ppu_VBK = 0xFF4F; // VRAM Bank Select (0 or 1)
+constexpr int ppu_OPRI = 0xFF6C; // Object Priority Mode (bit 0: 0=X-coord/CGB, 1=OAM-index/DMG)
 
 constexpr int HBlank = 0;
 constexpr int VBlank = 1;
@@ -52,6 +53,13 @@ public:
 	void write(WORD addr, BYTE val);
 	void resetPostBoot();
 
+	// Wired post-construction so the PPU can request interrupts (VBlank, STAT) on the bus.
+	// If null, interrupt requests are silently dropped.
+	void set_bus(IBus* bus) { bus_ = bus; }
+
+	const std::array<WORD, 160 * 144>& framebuffer_view() const { return framebuffer; }
+	bool consume_frame_ready() { const bool r = frame_ready_; frame_ready_ = false; return r; }
+
 
 
 private:
@@ -71,6 +79,8 @@ private:
 	BYTE visible_sprite_count_; // The number of visible sprites. Max 10
 	BYTE window_line_counter_;
 	std::array<BYTE, 160> bg_color_idx_line_;
+	std::array<bool, 160> bg_priority_line_;
+	std::array<bool, 160> sprite_claimed_line_;
 
 	// Device Registers
 	BYTE lcdc_; // 0xFF40 LCD Control: master enable, tile-map/tile-data selectors, sprite size, BG/window enable bits
@@ -87,8 +97,13 @@ private:
 	BYTE vbk_;  // 0xFF4F VRAM bank select; only bit 0 is meaningful, indexes ppu_VRAM
 	BYTE bgpi_; // 0xFF68 BG palette index: bits 0..5 = index into bg_palette_ram, bit 7 = auto-increment on BGPD write
 	BYTE obpi_; // 0xFF6A OBJ palette index, same layout as bgpi_ but for obj_palette_ram
+	BYTE opri_; // 0xFF6C Object Priority Mode: bit 0 = 0 → X-priority (CGB), 1 → OAM-priority (DMG)
 	BYTE mode_; // The present mode of the PPU (VBlank, HBlank, Drawing, OAMScan)
 	WORD dot_; // Store for the amount of cycles passed.
+	bool stat_line_ = false; // Previous combined STAT IRQ line; STAT IRQ fires on its 0->1 edge.
+	bool frame_ready_ = false; // Set on entry to VBlank; consumed by main loop to drive display present.
+
+	IBus* bus_ = nullptr; // Set via set_bus(); used to request VBlank/STAT IRQs.
 
 	// Timing Methods
 	int get_next_step_(int step) const;
