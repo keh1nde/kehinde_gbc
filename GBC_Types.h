@@ -48,6 +48,8 @@ constexpr int c_RegA = 7;
 
 enum class Interrupt : BYTE {VBlank, LCDStat, Timer, Serial, Joypad};
 
+
+
 struct IBus { // Interface for the CPU to access memory of components
 	// and for component memory implementations.
 	virtual ~IBus() = default;
@@ -57,6 +59,8 @@ struct IBus { // Interface for the CPU to access memory of components
 
 	virtual WORD read16(WORD addr) = 0;
 	virtual void write16(WORD addr, WORD val) = 0;
+
+	virtual void requestInterrupt(Interrupt which) = 0;
 };
 
 
