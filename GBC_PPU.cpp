@@ -3,6 +3,7 @@
 //
 
 #include "GBC_PPU.h"
+#include <iostream>
 
 
 void GBC_PPU::tick(const BYTE cycles) {
@@ -34,7 +35,11 @@ void GBC_PPU::tick(const BYTE cycles) {
 
 		if (mode_ == HBlank) {
 			ly_++;
-			if (ly_ >= 144) mode_ = VBlank;
+			if (ly_ >= 144) {
+				mode_ = VBlank;
+				frame_ready_ = true;
+				if (bus_) bus_->requestInterrupt(Interrupt::VBlank);
+			}
 			else mode_ = get_next_step_(mode_);
 		} else if (mode_ == VBlank) {
 			if (ly_ >= 153) {
@@ -44,12 +49,22 @@ void GBC_PPU::tick(const BYTE cycles) {
 			} else {
 				ly_++;
 				mode_ = get_next_step_(mode_);
-				// TODO: If mode_ is now VBlank, request VBlank IRQ
 			}
 		} else {
 			mode_ = get_next_step_(mode_);
-			// TODO: If mode_ is now VBlank, request VBlank IRQ
 		}
+
+		// STAT IRQ: edge-triggered on the OR of all enabled sources.
+		// stat_ bits: 3=HBlank, 4=VBlank, 5=OAMScan, 6=LY=LYC.
+		const bool new_stat_line =
+			   ((stat_ & 0x08) && mode_ == HBlank)
+			|| ((stat_ & 0x10) && mode_ == VBlank)
+			|| ((stat_ & 0x20) && mode_ == OAMScan)
+			|| ((stat_ & 0x40) && ly_ == lyc_);
+		if (new_stat_line && !stat_line_ && bus_) {
+			bus_->requestInterrupt(Interrupt::LCDStat);
+		}
+		stat_line_ = new_stat_line;
 	}
 }
 
@@ -67,11 +82,23 @@ void GBC_PPU::resetPostBoot() {
 	vbk_ = 0x00;
 	bgpi_ = 0x00;
 	obpi_ = 0x00;
+	opri_ = 0x01; // CGB boot-ROM default for this test ROM: OAM-priority.
+
+	const WORD dmg_pal[4] = {0x7FFF, 0x56B5, 0x294A, 0x0000};
+	for (int c = 0; c < 4; c++) {
+		bg_palette_ram[c * 2 + 0] = dmg_pal[c] & 0xFF;
+		bg_palette_ram[c * 2 + 1] = (dmg_pal[c] >> 8) & 0xFF;
+		obj_palette_ram[c * 2 + 0] = dmg_pal[c] & 0xFF;
+		obj_palette_ram[c * 2 + 1] = (dmg_pal[c] >> 8) & 0xFF;
+
+	}
 
 	dot_ = 0;
 	mode_ = 2;
 	window_line_counter_ = 0;
 	visible_sprite_count_ = 0;
+	stat_line_ = false;
+	frame_ready_ = false;
 	framebuffer.fill(0);
 }
 
@@ -97,11 +124,20 @@ void GBC_PPU::scan_oam_() {
 		}
 	}
 
-	std::sort(visible_sprites_.begin(), visible_sprites_.begin() + visible_sprite_count_,
-		[](const Sprite& a, const Sprite& b) {
-			if (a.x != b.x) return a.x < b.x;
-			return a.oam_index < b.oam_index;
-	});
+	if (opri_ & 0x01) {
+		// DMG / OAM-priority: lower OAM index wins.
+		std::sort(visible_sprites_.begin(), visible_sprites_.begin() + visible_sprite_count_,
+			[](const Sprite& a, const Sprite& b) {
+				return a.oam_index < b.oam_index;
+		});
+	} else {
+		// CGB / X-priority: lower X wins, OAM index tiebreak.
+		std::sort(visible_sprites_.begin(), visible_sprites_.begin() + visible_sprite_count_,
+			[](const Sprite& a, const Sprite& b) {
+				if (a.x != b.x) return a.x < b.x;
+				return a.oam_index < b.oam_index;
+		});
+	}
 
 }
 
@@ -123,9 +159,28 @@ void GBC_PPU::scan_oam_() {
 */
 
 void GBC_PPU::render_scanline_() {
-	// Render BG, window, sprites for line ly_ into framebuffer.
+	static int frame_count = 0;
+	static bool dumped = false;
+	if (ly_ == 0) frame_count++;
+	if (frame_count >= 120 && !dumped) {
+		dumped = true;
+		std::cerr << "--- OAM dump (frame " << frame_count << ") ---\n";
+		for (int i = 0; i < 40; ++i) {
+			const BYTE y = ppu_OAM[i*4 + 0];
+			const BYTE x = ppu_OAM[i*4 + 1];
+			const BYTE t = ppu_OAM[i*4 + 2];
+			const BYTE a = ppu_OAM[i*4 + 3];
+			std::cerr << "oam[" << std::dec << i << "] y=" << (int)y
+					  << " x=" << (int)x << " tile=0x" << std::hex << (int)t
+					  << " attr=0x" << (int)a << std::dec << "\n";
+		}
+		std::cerr << "lcdc=0x" << std::hex << (int)lcdc_
+				  << " opri=0x" << (int)opri_ << std::dec << "\n";
+	}
 
-	if ((lcdc_ & 0x01) != 0) {
+	// Render BG, window, sprites for line ly_ into framebuffer.
+	// On CGB, LCDC bit 0 is BG-master-priority, not BG enable — BG/window always render.
+	{
 		bool drew_window = false;
 		BYTE color_idx;
 		for (int x = 0; x < 160; x++) {
@@ -168,8 +223,12 @@ void GBC_PPU::render_scanline_() {
 
 
 				color_idx = ((low >> bit) & 1) | (((high >> bit) & 1) << 1);
+
+
 				const BYTE window_pal = window_pixel_data & 0x07;
 				const BYTE off = window_pal * 8 + color_idx * 2;
+
+				bg_priority_line_[x] = (window_pixel_data & 0x80) != 0;
 				rgb = bg_palette_ram[off] | (bg_palette_ram[off + 1] << 8);
 
 
@@ -213,20 +272,18 @@ void GBC_PPU::render_scanline_() {
 				color_idx = ((low >> bit) & 1) | (((high >> bit) & 1) << 1);
 				const BYTE pal = pixel_data & 0x07;
 				const BYTE off = pal * 8 + color_idx * 2;
-				rgb = bg_palette_ram[off] | (bg_palette_ram[off + 1] << 8);
 
+
+				bg_priority_line_[x] = (pixel_data & 0x80) != 0;
+				rgb = bg_palette_ram[off] | (bg_palette_ram[off + 1] << 8);
 			}
+
 
 			bg_color_idx_line_[x] = color_idx;
 			framebuffer[ly_*160 + x] = rgb;
 		}
 		if (drew_window) window_line_counter_++;
- } else {
- 	const WORD rgb = bg_palette_ram[0] | (bg_palette_ram[1] << 8);
-	 for (int x = 0; x < 160; x++) {
-	 	framebuffer[ly_*160 + x] = rgb;
-	 }
- }
+	}
 
 	if (lcdc_ & 0x02) {
 		render_sprites_();
@@ -234,7 +291,12 @@ void GBC_PPU::render_scanline_() {
 }
 
 void GBC_PPU::render_sprites_() {
-	for (int i = visible_sprite_count_ - 1; i >= 0; i--) {
+	sprite_claimed_line_.fill(false);
+
+	// Iterate highest-priority first. visible_sprites_ is sorted ascending by priority key
+	// (X-priority: lower X first; OAM-priority: lower OAM index first), so forward iteration
+	// processes the highest-priority sprite at each pixel first.
+	for (int i = 0; i < visible_sprite_count_; i++) {
 		const Sprite& s = visible_sprites_[i];
 		const BYTE height = (lcdc_ & 0x04) ? 16 : 8;
 		BYTE tile_idx = s.tile;
@@ -253,6 +315,10 @@ void GBC_PPU::render_sprites_() {
 			const int screen_x = (s.x - 8) + px;
 			if (screen_x < 0 || screen_x >= 160) continue;
 
+			// Higher-priority sprite already claimed this pixel — skip regardless of transparency.
+			if (sprite_claimed_line_[screen_x]) continue;
+			sprite_claimed_line_[screen_x] = true;
+
 			int in_tile_x = px;
 			if (s.attribute & 0x20) in_tile_x = 7 - in_tile_x;
 			const int bit = 7 - in_tile_x;
@@ -264,7 +330,8 @@ void GBC_PPU::render_sprites_() {
 
 			const WORD color_idx = ((low >> bit) & 1) | (((high >> bit) & 1) << 1);
 			if (color_idx == 0) continue;
-			if ((lcdc_ & 0x01) && (s.attribute & 0x80) && bg_color_idx_line_[screen_x] != 0) continue;
+			if ((lcdc_ & 0x01) && bg_color_idx_line_[screen_x] != 0 &&
+				(bg_priority_line_[screen_x] || (s.attribute & 0x80))) continue;
 
 			const BYTE pal = s.attribute & 0x07;
 			const int off = pal * 8 + color_idx * 2;
@@ -291,6 +358,8 @@ BYTE GBC_PPU::read(const WORD addr) const {
 		case ppu_BGPD: return bg_palette_ram[bgpi_ & 0x3F];
 		case ppu_OBPI: return obpi_;
 		case ppu_OBPD: return obj_palette_ram[obpi_ & 0x3F];
+		case ppu_OPRI:
+			return opri_ | 0xFE;
 		case ppu_VBK: return vbk_ | 0xFE;
 		default: break;
 	}
@@ -303,6 +372,17 @@ BYTE GBC_PPU::read(const WORD addr) const {
 }
 
 void GBC_PPU::write(const WORD addr, const BYTE val) {
+	static bool seen_vbk_set = false;
+	static bool seen_vbk1_write = false;
+	if (addr == ppu_VBK && (val & 1) && !seen_vbk_set) {
+		std::cerr << "VBK set to 1 (val=0x" << std::hex << (int)val << ")\n";
+		seen_vbk_set = true;
+	}
+	if (addr >= 0x8000 && addr < 0xA000 && vbk_ == 1 && !seen_vbk1_write) {
+		std::cerr << "first bank1 write at 0x" << std::hex << addr << " val=0x" << (int)val << "\n";
+		seen_vbk1_write = true;
+	}
+
 	switch (addr) {
 		case ppu_LCDC:
 			lcdc_ = val;
@@ -349,6 +429,12 @@ void GBC_PPU::write(const WORD addr, const BYTE val) {
 		case ppu_OBPD:
 			obj_palette_ram[obpi_ & 0x3F] = val;
 			if (obpi_ & 0x80) obpi_ = (obpi_ & 0x80) | ((obpi_ + 1) & 0x3F);
+			return;
+		case ppu_OPRI:
+			static bool seen = false;
+			if (!seen) {std::cerr << "OPRI write val=0x" << std::hex << (int)val <<
+	"\n"; seen = true;}
+			opri_ = val;
 			return;
 		case ppu_VBK:
 			vbk_ = val & 1;
