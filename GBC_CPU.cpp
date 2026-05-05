@@ -73,10 +73,30 @@ int GBC_CPU::execute() {
 				bus_.read8(c_ProgramCounter + 2),
 				bus_.read8(c_ProgramCounter + 3));
 	#endif
+
+	// HALT idles the CPU. serviceInterrupts() clears c_Halted on any pending IRQ
+	// (regardless of IME). While halted we burn 4 T-cycles per call so the PPU/timer keep ticking.
+	if (c_Halted) return 4;
+
+	// EI's delayed-by-one enable. Snapshot the pending flag *before* dispatching; if it was
+	// already set going into this instruction, promote into c_IME on the way out (RAII latch
+	// fires regardless of which return path the switch takes). EI executed *this* instruction
+	// flips ime_pending_ true but won't promote until the next call. DI clears both flags,
+	// so the && ime_pending_ check correctly bails out in that case.
+	struct ImeLatch {
+		GBC_CPU* cpu;
+		bool was_pending;
+		~ImeLatch() {
+			if (was_pending && cpu->ime_pending_) {
+				cpu->c_IME = true;
+				cpu->ime_pending_ = false;
+			}
+		}
+	} latch{this, ime_pending_};
+
 	const BYTE opcode = getNextOpcode();
 	if (opcode == 0xCB) {
-		executeCB();
-		return;
+		return executeCB();
 	}
 
 	const BYTE top = opcode >> 6; // Top two bits
@@ -88,750 +108,732 @@ int GBC_CPU::execute() {
 		// except 0x76 which is HALT. Some instructions fetch from memory which requires the MMU.
 		case 0x41:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x42:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x43:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x44:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x45:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x46:
 			LD_r_HL(mid); // HL_r op
-			break;
+			return 8;
 		case 0x47:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x48:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x49:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x4A:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x4B:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x4C:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x4D:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x4E:
 			LD_r_HL(mid); // HL_r op
-			break;
+			return 8;
 		case 0x4F:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x50:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x51:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x52:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x53:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x54:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x55:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x56:
 			LD_r_HL(mid); // HL_r op
-			break;
+			return 8;
 		case 0x57:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x58:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x59:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x5A:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x5B:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x5C:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x5D:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x5E:
 			LD_r_HL(mid); // HL_r op
-			break;
+			return 8;
 		case 0x5F:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x60:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x61:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x62:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x63:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x64:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x65:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x66:
 			LD_r_HL(mid); // HL_r op
-			break;
+			return 8;
 		case 0x67:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x68:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x69:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x6A:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x6B:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x6C:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x6D:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x6E:
 			LD_r_HL(mid); // HL_r op
-			break;
+			return 8;
 		case 0x6F:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x70:
 			LD_HL_r(low); // HL_w op
-			break;
+			return 8;
 		case 0x71:
 			LD_HL_r(low); // HL_w op
-			break;
+			return 8;
 		case 0x72:
 			LD_HL_r(low);
-			break;
+			return 8;
 		case 0x73:
 			LD_HL_r(low); // HL_w op
-			break;
+			return 8;
 		case 0x74:
 			LD_HL_r(low); // HL_w op
-			break;
+			return 8;
 		case 0x75:
 			LD_HL_r(low); // HL_w op
-			break;
+			return 8;
 		case 0x76:
 			HALT();
-			break;
+			return 4;
 		case 0x77:
 			LD_HL_r(low); // HL_w op
-			break;
+			return 8;
 		case 0x78:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x79:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x7A:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x7B:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x7C:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x7D:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x7E:
 			LD_r_HL(mid); // HL_r op
-			break;
+			return 8;
 		case 0x7F:
 			LD_r_reg(mid, low);
-			break;
+			return 4;
 		case 0x36:
 			LD_HL_n();
-			break;
+			return 12;
 		case 0x0A:
 			LD_A_BC();
-			break;
+			return 8;
 		case 0x1A:
 			LD_A_DE();
-			break;
+			return 8;
 		case 0x02:
 			LD_BC_A();
-			break;
+			return 8;
 		case 0x12:
 			LD_DE_A();
-			break;
+			return 8;
 		case 0xFA:
 			LD_A_nn();
-			break;
+			return 12;
 		case 0xEA:
 			LD_nn_A();
-			break;
+			return 12;
 		case 0xF2:
 			LDH_A_C();
-			break;
+			return 8;
 		case 0xE2:
 			LDH_C_A();
-			break;
+			return 8;
 		case 0xF0:
 			LDH_A_n();
-			break;
+			return 12;
 		case 0xE0:
 			LDH_n_A();
-			break;
+			return 12;
 		case 0x3A:
 			LD_A_HLdec();
-			break;
+			return 8;
 		case 0x32:
 			LD_HLdec_A();
-			break;
+			return 8;
 		case 0x2A:
 			LD_A_HLinc();
-			break;
+			return 8;
 		case 0x22:
 			LD_HLinc_A();
-			break;
+			return 8;
 		case 0x01:
 			LD_rr_nn(c_PairBC);
-			break;
+			return 12;
 		case 0x11:
 			LD_rr_nn(c_PairDE);
-			break;
+			return 12;
 		case 0x21:
 			LD_rr_nn(c_PairHL);
-			break;
+			return 12;
 		case 0x31:
 			LD_rr_nn(c_PairSP);
-			break;
+			return 12;
 		case 0x08:
 			LD_nn_SP();
-			break;
+			return 20;
 		case 0xF9:
 			LD_SP_HL();
-			break;
+			return 8;
 		case 0xC5:
 			PUSH_rr(c_PairBC);
-			break;
+			return 16;
 		case 0xD5:
 			PUSH_rr(c_PairDE);
-			break;
+			return 16;
 		case 0xE5:
 			PUSH_rr(c_PairHL);
-			break;
+			return 16;
 		case 0xF5:
 			PUSH_rr(c_PairAF);
-			break;
+			return 16;
 		case 0xC1:
 			POP_rr(c_PairBC);
-			break;
+			return 12;
 		case 0xD1:
 			POP_rr(c_PairDE);
-			break;
+			return 12;
 		case 0xE1:
 			POP_rr(c_PairHL);
-			break;
+			return 12;
 		case 0xF1:
 			POP_rr(c_PairAF);
-			break;
+			return 12;
 		case 0xF8:
 			LD_HL_SPe();
-			break;
+			return 12;
 		// The following are all ADD instructions:
 		case 0x80:
 			ADD_A_r(c_RegB);
-			break;
+			return 4;
 		case 0x81:
 			ADD_A_r(c_RegC);
-			break;
+			return 4;
 		case 0x82:
 			ADD_A_r(c_RegD);
-			break;
+			return 4;
 		case 0x83:
 			ADD_A_r(c_RegE);
-			break;
+			return 4;
 		case 0x84:
 			ADD_A_r(c_RegH);
-			break;
+			return 4;
 		case 0x85:
 			ADD_A_r(c_RegL);
-			break;
+			return 4;
 		case 0x86:
 			ADD_A_HL();
-			break;
+			return 8;
 		case 0x87:
 			ADD_A_r(c_RegA);
-			break;
+			return 4;
 		case 0xC6:
 			ADD_A_n();
-			break;
+			return 4;
 		case 0x88:
 			ADC_A_r(c_RegB);
-			break;
+			return 4;
 		case 0x89:
 			ADC_A_r(c_RegC);
-			break;
+			return 4;
 		case 0x8A:
 			ADC_A_r(c_RegD);
-			break;
+			return 4;
 		case 0x8B:
 			ADC_A_r(c_RegE);
-			break;
+			return 4;
 		case 0x8C:
 			ADC_A_r(c_RegH);
-			break;
+			return 4;
 		case 0x8D:
 			ADC_A_r(c_RegL);
-			break;
+			return 4;
 		case 0x8E:
 			ADC_A_HL();
-			break;
+			return 8;
 		case 0x8F:
 			ADC_A_r(c_RegA);
-			break;
+			return 4;
 		case 0xCE:
 			ADC_A_n();
-			break;
+			return 8;
 		case 0x90:
 			SUB_r(c_RegB);
-			break;
+			return 4;
 		case 0x91:
 			SUB_r(c_RegC);
-			break;
+			return 4;
 		case 0x92:
 			SUB_r(c_RegD);
-			break;
+			return 4;
 		case 0x93:
 			SUB_r(c_RegE);
-			break;
+			return 4;
 		case 0x94:
 			SUB_r(c_RegH);
-			break;
+			return 4;
 		case 0x95:
 			SUB_r(c_RegL);
-			break;
+			return 4;
 		case 0x96:
 			SUB_HL();
-			break;
+			return 8;
 		case 0x97:
 			SUB_r(c_RegA);
-			break;
+			return 4;
 		case 0x98:
 			SBC_A_r(c_RegB);
-			break;
+			return 4;
 		case 0x99:
 			SBC_A_r(c_RegC);
-			break;
+			return 4;
 		case 0x9A:
 			SBC_A_r(c_RegD);
-			break;
+			return 4;
 		case 0x9B:
 			SBC_A_r(c_RegE);
-			break;
+			return 4;
 		case 0x9C:
 			SBC_A_r(c_RegH);
-			break;
+			return 4;
 		case 0x9D:
 			SBC_A_r(c_RegL);
-			break;
+			return 4;
 		case 0x9E:
 			SBC_A_HL();
-			break;
+			return 8;
 		case 0x9F:
 			SBC_A_r(c_RegA);
-			break;
+			return 4;
 		case 0xDE:
 			SBC_A_n();
-			break;
+			return 8;
 		case 0xB8:
 			CP_r(c_RegB);
-			break;
+			return 4;
 		case 0xB9:
 			CP_r(c_RegC);
-			break;
+			return 4;
 		case 0xBA:
 			CP_r(c_RegD);
-			break;
+			return 4;
 		case 0xBB:
 			CP_r(c_RegE);
-			break;
+			return 4;
 		case 0xBC:
 			CP_r(c_RegH);
-			break;
+			return 4;
 		case 0xBD:
 			CP_r(c_RegL);
-			break;
+			return 4;
 		case 0xBE:
 			CP_HL();
-			break;
+			return 8;
 		case 0xBF:
 			CP_r(c_RegA);
-			break;
+			return 4;
 		case 0xFE:
 			CP_n();
-			break;
+			return 8;
 		case 0x04:
 			INC_r(c_RegB);
-			break;
+			return 4;
 		case 0x14:
 			INC_r(c_RegD);
-			break;
+			return 4;
 		case 0x24:
 			INC_r(c_RegH);
-			break;
+			return 4;
 		case 0x34:
 			INC_HL();
-			break;
+			return 12;
 		case 0x0C:
 			INC_r(c_RegC);
-			break;
+			return 4;
 		case 0x1C:
 			INC_r(c_RegE);
-			// std::cout << "PC=" << c_ProgramCounter << " Register E value after INC_r(E): 0x" << std::hex << static_cast<int>(c_E) << std::endl;
-			// std::cout << "PC=" << c_ProgramCounter << " Z flag after INC_r: " << getFlag(c_ZeroFlag) << std::endl;
-			break;
+			return 4;
 		case 0x2C:
 			INC_r(c_RegL);
-			break;
+			return 4;
 		case 0x3C:
 			INC_r(c_RegA);
-			break;
+			return 4;
 		case 0x05:
 			DEC_r(c_RegB);
-			break;
+			return 4;
 		case 0x15:
 			DEC_r(c_RegD);
-			break;
+			return 4;
 		case 0x25:
 			DEC_r(c_RegH);
-			break;
+			return 4;
 		case 0x35:
 			DEC_HL();
-			break;
+			return 12;
 		case 0x0D:
 			DEC_r(c_RegC);
-			break;
+			return 4;
 		case 0x1D:
 			DEC_r(c_RegE);
-			break;
+			return 4;
 		case 0x2D:
 			DEC_r(c_RegL);
-			break;
+			return 4;
 		case 0x3D:
 			DEC_r(c_RegA);
-			break;
+			return 4;
 		case 0xA0:
 			AND_r(c_RegB);
-			break;
+			return 4;
 		case 0xA1:
 			AND_r(c_RegC);
-			break;
+			return 4;
 		case 0xA2:
 			AND_r(c_RegD);
-			break;
+			return 4;
 		case 0xA3:
 			AND_r(c_RegE);
-			break;
+			return 4;
 		case 0xA4:
 			AND_r(c_RegH);
-			break;
+			return 4;
 		case 0xA5:
 			AND_r(c_RegL);
-			break;
+			return 4;
 		case 0xA6:
 			AND_HL();
-			break;
+			return 8;
 		case 0xA7:
 			AND_r(c_RegA);
-			break;
+			return 4;
 		case 0xE6:
 			AND_n();
-			break;
+			return 8;
 		case 0xB0:
 			OR_r(c_RegB);
-			break;
+			return 4;
 		case 0xB1:
 			OR_r(c_RegC);
-			break;
+			return 4;
 		case 0xB2:
 			OR_r(c_RegD);
-			break;
+			return 4;
 		case 0xB3:
 			OR_r(c_RegE);
-			break;
+			return 4;
 		case 0xB4:
 			OR_r(c_RegH);
-			break;
+			return 4;
 		case 0xB5:
 			OR_r(c_RegL);
-			break;
+			return 4;
 		case 0xB6:
 			OR_HL();
-			break;
+			return 8;
 		case 0xB7:
 			OR_r(c_RegA);
-			break;
+			return 4;
 		case 0xF6:
 			OR_n();
-			break;
+			return 8;
 		case 0xA8:
 			XOR_r(c_RegB);
-			break;
+			return 4;
 		case 0xA9:
 			XOR_r(c_RegC);
-			break;
+			return 4;
 		case 0xAA:
 			XOR_r(c_RegD);
-			break;
+			return 4;
 		case 0xAB:
 			XOR_r(c_RegE);
-			break;
+			return 4;
 		case 0xAC:
 			XOR_r(c_RegH);
-			break;
+			return 4;
 		case 0xAD:
 			XOR_r(c_RegL);
-			break;
+			return 4;
 		case 0xAE:
 			XOR_HL();
-			break;
+			return 8;
 		case 0xAF:
 			XOR_r(c_RegA);
-			break;
+			return 4;
 		case 0xEE:
 			XOR_n();
-			break;
+			return 8;
 		case 0x3F:
 			CCF();
-			break;
+			return 4;
 		case 0x37:
 			SCF();
-			break;
+			return 4;
 		case 0x27:
 			DAA();
-			break;
+			return 4;
 		case 0x2F:
 			CPL();
-			break;
+			return 4;
 		case 0x03:
 			INC_rr(c_PairBC);
-			break;
+			return 8;
 		case 0x13:
 			INC_rr(c_PairDE);
-			break;
+			return 8;
 		case 0x23:
 			INC_rr(c_PairHL);
-			break;
+			return 8;
 		case 0x33:
 			INC_rr(c_PairSP);
-			break;
+			return 8;
 		case 0x0B:
 			DEC_rr(c_PairBC);
-			break;
+			return 8;
 		case 0x1B:
 			DEC_rr(c_PairDE);
-			break;
+			return 8;
 		case 0x2B:
 			DEC_rr(c_PairHL);
-			break;
+			return 8;
 		case 0x3B:
 			DEC_rr(c_PairSP);
-			break;
+			return 8;
 		case 0x09:
 			ADD_HL_rr(c_PairBC);
-			break;
+			return 8;
 		case 0x19:
 			ADD_HL_rr(c_PairDE);
-			break;
+			return 8;
 		case 0x29:
 			ADD_HL_rr(c_PairHL);
-			break;
+			return 8;
 		case 0x39:
 			ADD_HL_rr(c_PairSP);
-			break;
+			return 8;
 		case 0xE8:
 			ADD_SP_e();
-			break;
+			return 8;
 
 		// Unprefixed rotate-accumulator ops. Distinct from CB-prefixed RLC A/etc. — Z forced to 0.
 		case 0x07:
 			RLCA();
-			break;
+			return 4;
 		case 0x0F:
 			RRCA();
-			break;
+			return 4;
 		case 0x17:
 			RLA();
-			break;
+			return 4;
 		case 0x1F:
 			RRA();
-			break;
+			return 4;
 
 		// Miscellaneous
 		case 0x00:
 			NOP();
-			break;
+			return 4;
 		case 0x10:
 			STOP();
-			break;
+			return 4;
 		case 0xF3:
 			DI();
-			break;
+			return 4;
 		case 0xFB:
 			EI();
-			break;
+			return 4;
 
 		// Jumps
 		case 0xC3:
 			JP_nn();
-			break;
+			return 16;
 		case 0xE9:
 			JP_HL();
-			break;
+			return 4;
 		case 0xC2:
-			JP_cc_nn(c_CondNZ);
-			break;
+			return JP_cc_nn(c_CondNZ);
 		case 0xCA:
-			JP_cc_nn(c_CondZ);
-			break;
+			return JP_cc_nn(c_CondZ);
 		case 0xD2:
-			JP_cc_nn(c_CondNC);
-			break;
+			return JP_cc_nn(c_CondNC);
 		case 0xDA:
-			JP_cc_nn(c_CondC);
-			break;
+			return JP_cc_nn(c_CondC);
 		case 0x18:
 			JR_e();
-			break;
+			return 20;
 		case 0x20:
-			JR_cc_e(c_CondNZ);
-			break;
+			return JR_cc_e(c_CondNZ);
 		case 0x28:
-			JR_cc_e(c_CondZ);
-			break;
+			return JR_cc_e(c_CondZ);
 		case 0x30:
-			JR_cc_e(c_CondNC);
-			break;
+			return JR_cc_e(c_CondNC);
 		case 0x38:
-			JR_cc_e(c_CondC);
-			break;
+			return JR_cc_e(c_CondC);
 
 		// Calls / returns
 		case 0xCD:
 			CALL_nn();
-			break;
+			return 24;
 		case 0xC4:
-			CALL_cc_nn(c_CondNZ);
-			break;
+			return CALL_cc_nn(c_CondNZ);
 		case 0xCC:
-			CALL_cc_nn(c_CondZ);
-			break;
+			return CALL_cc_nn(c_CondZ);
 		case 0xD4:
-			CALL_cc_nn(c_CondNC);
-			break;
+			return CALL_cc_nn(c_CondNC);
 		case 0xDC:
-			CALL_cc_nn(c_CondC);
-			break;
+			return CALL_cc_nn(c_CondC);
 		case 0xC9:
 			RET();
-			break;
+			return 16;
 		case 0xC0:
-			RET_cc(c_CondNZ);
-			break;
+			return RET_cc(c_CondNZ);
 		case 0xC8:
-			RET_cc(c_CondZ);
-			break;
+			return RET_cc(c_CondZ);
 		case 0xD0:
-			RET_cc(c_CondNC);
-			break;
+			return RET_cc(c_CondNC);
 		case 0xD8:
-			RET_cc(c_CondC);
-			break;
+			return RET_cc(c_CondC);
 		case 0xD9:
 			RETI();
-			break;
+			return 16;
 
 		// Restart vectors
 		case 0xC7:
 			RST(0x00);
-			break;
+			return 16;
 		case 0xCF:
 			RST(0x08);
-			break;
+			return 16;
 		case 0xD7:
 			RST(0x10);
-			break;
+			return 16;
 		case 0xDF:
 			RST(0x18);
-			break;
+			return 16;
 		case 0xE7:
 			RST(0x20);
-			break;
+			return 16;
 		case 0xEF:
 			RST(0x28);
-			break;
+			return 16;
 		case 0xF7:
 			RST(0x30);
-			break;
+			return 16;
 		case 0xFF:
 			RST(0x38);
-			break;
+			return 16;
 		// Previous missing opcodes
 		case 0x06:
 			LD_r_n(c_RegB);
-			break;
+			return 8;
 		case 0x16:
 			LD_r_n(c_RegD);
-			break;
+			return 8;
 		case 0x26:
 			LD_r_n(c_RegH);
-			break;
+			return 8;
 		case 0x3E:
 			LD_r_n(c_RegA);
-			break;
+			return 8;
 		case 0x0E:
 			LD_r_n(c_RegC);
-			break;
+			return 8;
 		case 0x1E:
 			LD_r_n(c_RegE);
-			break;
+			return 8;
 		case 0x2E:
 			LD_r_n(c_RegL);
-			break;
+			return 8;
 		case 0x40:
 			LD_r_reg(c_RegB, c_RegB);
-			break;
+			return 4;
 		case 0xD6:
 			SUB_n();
-			break;
+			return 8;
 		default:
 			throw std::runtime_error("Unimplemented opcode: 0x" +
 				(std::stringstream{} << std::hex << static_cast<int>(opcode)).str());
@@ -840,7 +842,7 @@ int GBC_CPU::execute() {
 }
 
 
-void GBC_CPU::executeCB() {
+int GBC_CPU::executeCB() {
 	const BYTE opcode = getNextOpcode();
 	const BYTE top = opcode >> 6;          // bits 7:6 — family
 	const BYTE mid = (opcode >> 3) & 0x7;  // bits 5:3 — sub-op or bit index
@@ -849,29 +851,59 @@ void GBC_CPU::executeCB() {
 	switch (top) {
 		case 0x0:
 			switch (mid) {
-			case 0x0: RLC(low);  break;
-			case 0x1: RRC(low);  break;
-			case 0x2: RL(low);   break;
-			case 0x3: RR(low);   break;
-			case 0x4: SLA(low);  break;
-			case 0x5: SRA(low);  break;
-			case 0x6: SWAP(low); break;
-			case 0x7: SRL(low);  break;
+			case 0x0: RLC(low);  return (low == c_RegHL) ? 16 : 8;
+			case 0x1: RRC(low);  return (low == c_RegHL) ? 16 : 8;
+			case 0x2: RL(low);   return (low == c_RegHL) ? 16 : 8;
+			case 0x3: RR(low);   return (low == c_RegHL) ? 16 : 8;
+			case 0x4: SLA(low);  return (low == c_RegHL) ? 16 : 8;
+			case 0x5: SRA(low);  return (low == c_RegHL) ? 16 : 8;
+			case 0x6: SWAP(low); return (low == c_RegHL) ? 16 : 8;
+			case 0x7: SRL(low);  return (low == c_RegHL) ? 16 : 8;
 			default: break; // unreachable; mid is 3 bits
 			}
 			break;
 		case 0x1:
 			BIT(mid, low);
-			break;
+			return (low == c_RegHL) ? 12 : 8;
 		case 0x2:
 			RES(mid, low);
-			break;
+			return (low == c_RegHL) ? 16 : 8;
 		case 0x3:
 			SET(mid, low);
-			break;
+			return (low == c_RegHL) ? 16 : 8;
 		default:
 			throw std::runtime_error("Unimplemented opcode: " + std::to_string(opcode));
 	}
+	return 0; // unreachable — top-0 inner switch breaks out without returning
+}
+
+int GBC_CPU::serviceInterrupts() {
+	// Read IF and IE through the bus surface (no direct access from IBus). The 0xE0 high bits
+	// of IF read back as 1, so mask to the five real interrupt bits.
+	const BYTE if_reg = bus_.read8(0xFF0F) & 0x1F;
+	const BYTE ie_reg = bus_.read8(0xFFFF) & 0x1F;
+	const BYTE pending = if_reg & ie_reg;
+
+	if (!pending) return 0;
+
+	// HALT wakes on any pending IRQ regardless of IME — the CPU simply resumes fetching.
+	c_Halted = false;
+
+	if (!c_IME) return 0;
+
+	// Lowest-numbered bit wins (VBlank highest priority, Joypad lowest).
+	for (int i = 0; i < 5; i++) {
+		const BYTE bit = 1 << i;
+		if (pending & bit) {
+			c_IME = false;
+			bus_.write8(0xFF0F, if_reg & ~bit);            // ack
+			bus_.write8(--c_StackPointer, c_ProgramCounter >> 8);
+			bus_.write8(--c_StackPointer, c_ProgramCounter & 0xFF);
+			c_ProgramCounter = 0x40 + i * 8;               // 0x40, 0x48, 0x50, 0x58, 0x60
+			return 20;                                     // service takes 20 T-cycles
+		}
+	}
+	return 0;
 }
 
 void GBC_CPU::LD_r_reg(const BYTE dest, const BYTE source) {
@@ -1634,11 +1666,13 @@ void GBC_CPU::STOP() {
 
 void GBC_CPU::DI() {
 	c_IME = false;
+	ime_pending_ = false;
 }
 
 void GBC_CPU::EI() {
-	// Real hardware delays the enable by one instruction; not modeled here.
-	c_IME = true;
+	// Real hardware delays the enable by one instruction. ime_pending_ is promoted into
+	// c_IME at the bottom of execute() after the *next* instruction completes.
+	ime_pending_ = true;
 }
 
 void GBC_CPU::JP_nn() {
@@ -1651,13 +1685,15 @@ void GBC_CPU::JP_HL() {
 	c_ProgramCounter = (c_H << 8) | c_L;
 }
 
-void GBC_CPU::JP_cc_nn(const BYTE cc) {
+int GBC_CPU::JP_cc_nn(const BYTE cc) {
 	// Immediate is always consumed regardless of branch outcome.
 	const BYTE lsb = getNextOpcode();
 	const BYTE msb = getNextOpcode();
 	if (checkCondition(cc)) {
 		c_ProgramCounter = (msb << 8) | lsb;
+		return 16;
 	}
+	return 12;
 }
 
 void GBC_CPU::JR_e() {
@@ -1665,21 +1701,13 @@ void GBC_CPU::JR_e() {
 	c_ProgramCounter += e;
 }
 
-void GBC_CPU::JR_cc_e(const BYTE cc) {
+int GBC_CPU::JR_cc_e(const BYTE cc) {
 	const int8_t e = static_cast<int8_t>(getNextOpcode());
 	if (checkCondition(cc)) {
 		c_ProgramCounter += e;
+		return 12;
 	}
-
-	if (c_ProgramCounter == 0x206 || c_ProgramCounter == 0x20F) {
-		/*if (e == -9) std::cout << "OUTER JR..." << std::endl;
-
-		std::cout
-	<< "JR @PC=" << std::hex << c_ProgramCounter
-	<< " JR cc=" << static_cast<int>(cc) << " Z=" << getFlag(c_ZeroFlag)
-	<< " taken=" << checkCondition(cc) << " e=" << static_cast<int>(e) << std::endl;*/
-	}
-
+	return 8;
 }
 
 void GBC_CPU::CALL_nn() {
@@ -1689,23 +1717,27 @@ void GBC_CPU::CALL_nn() {
 	c_ProgramCounter = (msb << 8) | lsb;
 }
 
-void GBC_CPU::CALL_cc_nn(const BYTE cc) {
+int GBC_CPU::CALL_cc_nn(const BYTE cc) {
 	const BYTE lsb = getNextOpcode();
 	const BYTE msb = getNextOpcode();
 	if (checkCondition(cc)) {
 		pushWord(c_ProgramCounter);
 		c_ProgramCounter = (msb << 8) | lsb;
+		return 24;
 	}
+	return 12;
 }
 
 void GBC_CPU::RET() {
 	c_ProgramCounter = popWord();
 }
 
-void GBC_CPU::RET_cc(const BYTE cc) {
+int GBC_CPU::RET_cc(const BYTE cc) {
 	if (checkCondition(cc)) {
 		c_ProgramCounter = popWord();
+		return 20;
 	}
+	return 8;
 }
 
 void GBC_CPU::RETI() {
