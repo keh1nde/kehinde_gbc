@@ -19,8 +19,9 @@ class GBC_CPU {
 public:
 	// Class Methods
 	explicit GBC_CPU(IBus& bus); // aka the initializer/reset.
-	void execute();
-	void executeCB();
+	int execute();
+	int executeCB();
+	int serviceInterrupts();
 	void resetPostBoot();
 	void resetPostBootARegister();
 
@@ -43,6 +44,10 @@ private:
 	// Interrupt master enable. DI clears it, EI sets it (delayed-by-one semantics not modeled yet),
 	// RETI sets it. Not yet consulted by an interrupt-servicing loop — the bit is just maintained.
 	bool c_IME = false;
+
+	// EI's delayed-by-one enable. EI sets this; execute() promotes it into c_IME after the
+	// following instruction completes. DI clears both.
+	bool ime_pending_ = false;
 
 	// HALT latch. HALT sets this; the fetch loop is expected to skip dispatch and idle the CPU
 	// until an interrupt arrives. STOP also flips it on for now (full STOP semantics — LCD off,
@@ -76,6 +81,7 @@ private:
 
 
 	// Helper Functions
+
 	/**
 	 * @brief Stores information from the source register to the destination register.
 	 * @param dest Points to the destination register.
@@ -190,6 +196,9 @@ private:
 	 * @post The program counter increments by 1.
 	 */
 	BYTE getNextOpcode();
+
+	int machineTimeLookup(BYTE opcode);
+	int machineTimeLookupCB(BYTE optype);
 
 	// ### Instructions ###
 
@@ -835,7 +844,7 @@ private:
 	 * @post The 16-bit immediate nn is always consumed from PC+1 and PC+2; the program counter is loaded with nn
 	 * only if the condition holds. No flags are affected.
 	 */
-	void JP_cc_nn(BYTE cc);
+	int JP_cc_nn(BYTE cc);
 
 	/**
 	 * @brief JR e: Relative jump by signed 8-bit offset.
@@ -850,7 +859,7 @@ private:
 	 * @post The signed 8-bit immediate e is always consumed from PC+1; PC is adjusted by e only if the condition holds.
 	 * No flags are affected.
 	 */
-	void JR_cc_e(BYTE cc);
+	int JR_cc_e(BYTE cc);
 
 	/**
 	 * @brief CALL nn: Call the subroutine at the 16-bit immediate address.
@@ -865,7 +874,7 @@ private:
 	 * @post The 16-bit immediate nn is always consumed; if the condition holds, the return address is pushed onto the
 	 * stack (SP decremented by 2) and PC is loaded with nn. No flags are affected.
 	 */
-	void CALL_cc_nn(BYTE cc);
+	int CALL_cc_nn(BYTE cc);
 
 	/**
 	 * @brief RET: Return from subroutine.
@@ -880,7 +889,7 @@ private:
 	 * @post If the condition holds, the 16-bit value at the top of the stack is popped into the program counter
 	 * (SP incremented by 2). Otherwise no state changes. No flags are affected.
 	 */
-	void RET_cc(BYTE cc);
+	int RET_cc(BYTE cc);
 
 	/**
 	 * @brief RETI: Return from interrupt.
