@@ -36,7 +36,7 @@
 class GBC_BUS final : public IBus {
 public:
 
-	GBC_BUS(const std::string& bootPath, GBC_CART& cart, GBC_PPU& ppu); // Include all other components later.
+	GBC_BUS(const std::string& bootPath, GBC_CART& cart, GBC_PPU& ppu, GBC_TIMER& timer); // Include all other components later.
 
 	BYTE read8(WORD addr) override;
 	void write8(WORD addr, BYTE val) override;
