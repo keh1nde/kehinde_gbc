@@ -68,7 +68,9 @@ private:
 
 	GBC_CART& cart_;
 	GBC_PPU& ppu_;
-	CgbState cgb_;
+	GBC_TIMER& timer_;
+
+	// CgbState cgb_;  // TODO: define CgbState before re-enabling
 
 	// Other members
 	bool bootROM_enabled_ = false;
