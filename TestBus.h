@@ -15,11 +15,13 @@ public:
 	TestBus() = default;
 	std::array<BYTE, 0x10000> mem_{};
 
-	BYTE read8(WORD addr);
-	void write8(WORD addr, BYTE data);
+	BYTE read8(WORD addr) override;
+	void write8(WORD addr, BYTE data) override;
 
-	WORD read16(WORD addr);
-	void write16(WORD addr, WORD data);
+	WORD read16(WORD addr) override;
+	void write16(WORD addr, WORD data) override;
+
+	void requestInterrupt(Interrupt) override {}
 
 private:
 
