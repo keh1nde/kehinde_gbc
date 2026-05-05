@@ -45,7 +45,7 @@ public:
 	void write16(WORD addr, WORD val) override;
 	void tick(int cycles);
 
-	void request_interrupt(Interrupt which);
+	void requestInterrupt(Interrupt which) override;
 
 	void reset();
 	CgbState& cgb();
