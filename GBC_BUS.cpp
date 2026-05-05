@@ -4,7 +4,7 @@
 
 #include "GBC_BUS.h"
 
-GBC_BUS::GBC_BUS(const std::string &bootPath, GBC_CART& cart, GBC_PPU& ppu) : cart_(cart), ppu_(ppu) {
+GBC_BUS::GBC_BUS(const std::string &bootPath, GBC_CART& cart, GBC_PPU& ppu, GBC_TIMER& timer) : cart_(cart), ppu_(ppu), timer_(timer) {
 	// Load BootROM.
 	if (!bootPath.empty()) {
 		FILE* file = fopen(bootPath.c_str(),"rb");
