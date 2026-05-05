@@ -12,6 +12,8 @@
 #include <iostream>
 #include <stdexcept>
 
+#include "GBC_TIMER.h"
+
 /*
  * Address banking:
  * 0x0000–0x3FFF: Cartridge ROM bank 0 (if boot ROM enabled and addr < 0x0100 (DMG): return boot ROM byte)
