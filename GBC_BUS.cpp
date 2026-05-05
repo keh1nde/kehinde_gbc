@@ -3,9 +3,6 @@
 //
 
 #include "GBC_BUS.h"
-#include "GBC_Types.h"
-#include "GBC_CART.h"
-#include "GBC_PPU.h"
 
 GBC_BUS::GBC_BUS(const std::string &bootPath, GBC_CART& cart, GBC_PPU& ppu) : cart_(cart), ppu_(ppu) {
 	// Load BootROM.
