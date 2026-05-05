@@ -180,12 +180,8 @@ void GBC_BUS::requestInterrupt(Interrupt which) {
 void GBC_BUS::reset() {
 
 }
-GBC_BUS::CgbState& GBC_BUS::cgb() {
-	return cgb_;
-}
-const GBC_BUS::CgbState& GBC_BUS::cgb() const {
-	return cgb_;
-}
+// GBC_BUS::CgbState& GBC_BUS::cgb() { return cgb_; }                     // TODO: define CgbState
+// const GBC_BUS::CgbState& GBC_BUS::cgb() const { return cgb_; }
 
 // ———————— End Hardware Management, begin Helpers ————————
 
