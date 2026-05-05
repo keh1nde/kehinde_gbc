@@ -48,8 +48,8 @@ public:
 	void requestInterrupt(Interrupt which) override;
 
 	void reset();
-	CgbState& cgb();
-	const CgbState& cgb() const;
+  // CgbState& cgb();              // TODO: define CgbState before re-enabling
+	// const CgbState& cgb() const;
 
 
 
