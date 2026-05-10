@@ -19,19 +19,30 @@ int main(int argc, char* argv[]) {
 	GBC_CPU cpu(bus);
 
 	ppu.set_bus(&bus);
+	//std::cerr << "The PPU's bus has been set." << std::endl;
+
 	timer.set_bus(&bus);
+	//std::cerr << "The Timer's bus has been set." << std::endl;
+
 	cpu.resetPostBoot();
+	//std::cerr << "The CPU has been reset." << std::endl;
+
 	ppu.resetPostBoot();
+	//std::cerr << "The PPU has been reset." << std::endl;
+
 	timer.resetPostBoot();
+	//std::cerr << "The Timer has been reset." << std::endl;
 
 	GBC_DISPLAY display;
 	if (!display.init(4)) return 1;
+	//std::cerr << "The Display has started" << std::endl;
 
 	bool running = true;
 	while (running) {
 		try {
 			const int cycles = cpu.execute();
 			ppu.tick(cycles);
+
 			timer.tick(cycles);
 			const int irq_cycles = cpu.serviceInterrupts();
 			if (irq_cycles) {
