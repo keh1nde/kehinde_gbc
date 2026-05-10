@@ -46,6 +46,8 @@ constexpr int c_RegL = 5;
 constexpr int c_RegHL = 6;
 constexpr int c_RegA = 7;
 
+constexpr int c_OAM_DMA = 0xFF46;
+
 enum class Interrupt : BYTE {VBlank, LCDStat, Timer, Serial, Joypad};
 
 
