@@ -352,17 +352,6 @@ BYTE GBC_PPU::read(const WORD addr) const {
 }
 
 void GBC_PPU::write(const WORD addr, const BYTE val) {
-	static bool seen_vbk_set = false;
-	static bool seen_vbk1_write = false;
-	if (addr == ppu_VBK && (val & 1) && !seen_vbk_set) {
-		std::cerr << "VBK set to 1 (val=0x" << std::hex << (int)val << ")\n";
-		seen_vbk_set = true;
-	}
-	if (addr >= 0x8000 && addr < 0xA000 && vbk_ == 1 && !seen_vbk1_write) {
-		std::cerr << "first bank1 write at 0x" << std::hex << addr << " val=0x" << (int)val << "\n";
-		seen_vbk1_write = true;
-	}
-
 	switch (addr) {
 		case ppu_LCDC:
 			lcdc_ = val;
