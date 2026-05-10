@@ -23,6 +23,9 @@ add_executable(kehindes_gameboycolor_emulator main.cpp
         GBC_TIMER.cpp
         GBC_DISPLAY.h
         GBC_DISPLAY.cpp)
+        GBC_DISPLAY.cpp
+        GBC_APU.h
+        GBC_APU.cpp)
 
 target_include_directories(kehindes_gameboycolor_emulator PRIVATE ${SDL2_INCLUDE_DIRS})
 target_link_libraries(kehindes_gameboycolor_emulator PRIVATE ${SDL2_LIBRARIES})
