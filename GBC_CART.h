@@ -11,7 +11,6 @@
 
 class GBC_CART {
 public:
-	// Initializers
 	enum class Mapper { None, MBC1, MBC2, MBC5 };
 
 	explicit GBC_CART(const std::string& romPath);
