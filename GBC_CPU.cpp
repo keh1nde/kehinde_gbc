@@ -55,25 +55,6 @@ void GBC_CPU::resetPostBootARegister() {
 }
 
 int GBC_CPU::execute() {
-	/*static bool first = true;
-	if (first) {
-		std::cerr << "first execute: A=0x" << std::hex << static_cast<int>(c_A)
-							<< " PC=0x" << static_cast<int>(c_ProgramCounter) << "\n";
-		first = false;
-	}*/
-
-	#ifdef trace
-	std::printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X "
-								"SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n",
-				c_A, c_F, c_B, c_C, c_D, c_E, c_H, c_L,
-				c_StackPointer,  // SP — replace with whatever your SP member is named
-				c_ProgramCounter,
-				bus_.read8(c_ProgramCounter),
-				bus_.read8(c_ProgramCounter + 1),
-				bus_.read8(c_ProgramCounter + 2),
-				bus_.read8(c_ProgramCounter + 3));
-	#endif
-
 	// HALT idles the CPU. serviceInterrupts() clears c_Halted on any pending IRQ
 	// (regardless of IME). While halted we burn 4 T-cycles per call so the PPU/timer keep ticking.
 	if (c_Halted) return 4;
