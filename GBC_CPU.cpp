@@ -57,7 +57,6 @@ void GBC_CPU::resetPostBootARegister() {
 int GBC_CPU::execute() {
 	// HALT idles the CPU. serviceInterrupts() clears c_Halted on any pending IRQ
 	// (regardless of IME). While halted we burn 4 T-cycles per call so the PPU/timer keep ticking.
-	if (c_Halted) return 4;
 	if (c_Halted) {
 		return 4;
 	}
