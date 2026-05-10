@@ -76,6 +76,10 @@ GBC_CART::GBC_CART(const std::string& romPath) {
 		default:
 			throw std::runtime_error("Unsupported cartridge type");
 	}
+
+	if (ram_bytes > 0) ram_.assign(ram_bytes, 0);
+}
+
 }
 
 BYTE GBC_CART::read_rom(const WORD addr) const {
