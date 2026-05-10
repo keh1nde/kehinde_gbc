@@ -49,3 +49,17 @@ bool GBC_DISPLAY::pump() {
     }
     return true;
 }
+
+BYTE GBC_DISPLAY::poll_input() const {
+    const Uint8* keys = SDL_GetKeyboardState(nullptr);
+    BYTE b = 0;
+    if (keys[SDL_SCANCODE_N])      b |= 0x01; // A
+    if (keys[SDL_SCANCODE_M])      b |= 0x02; // B
+    if (keys[SDL_SCANCODE_RSHIFT]) b |= 0x04; // Select
+    if (keys[SDL_SCANCODE_RETURN]) b |= 0x08; // Start
+    if (keys[SDL_SCANCODE_D])      b |= 0x10; // Right
+    if (keys[SDL_SCANCODE_A])      b |= 0x20; // Left
+    if (keys[SDL_SCANCODE_W])      b |= 0x40; // Up
+    if (keys[SDL_SCANCODE_S])      b |= 0x80; // Down
+    return b;
+}

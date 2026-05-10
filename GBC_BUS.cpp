@@ -180,6 +180,23 @@ void GBC_BUS::requestInterrupt(Interrupt which) {
 void GBC_BUS::reset() {
 
 }
+
+void GBC_BUS::set_buttons(const BYTE buttons) {
+	// Edge-detect: any pin going high-to-low (newly pressed, currently selected) raises Joypad IRQ.
+	const BYTE prev = buttons_;
+	buttons_ = buttons;
+
+	const bool dirs_sel = (joyp_select_ & 0x10) == 0;
+	const bool btns_sel = (joyp_select_ & 0x20) == 0;
+
+	const BYTE prev_active = (dirs_sel ? ((prev >> 4) & 0x0F)     : 0)
+	                       | (btns_sel ? (prev & 0x0F)            : 0);
+	const BYTE curr_active = (dirs_sel ? ((buttons_ >> 4) & 0x0F) : 0)
+	                       | (btns_sel ? (buttons_ & 0x0F)        : 0);
+	if ((~prev_active & curr_active) != 0) {
+		requestInterrupt(Interrupt::Joypad);
+	}
+}
 // GBC_BUS::CgbState& GBC_BUS::cgb() { return cgb_; }                     // TODO: define CgbState
 // const GBC_BUS::CgbState& GBC_BUS::cgb() const { return cgb_; }
 
@@ -194,7 +211,13 @@ BYTE GBC_BUS::read_io(const WORD addr) {
 	if (addr == 0xFF4F) return ppu_.read(addr);
 	if (addr >= 0xFF68 && addr <= 0xFF6B) return ppu_.read(addr);
 	if (addr == 0xFF6C) return ppu_.read(addr);
-	if (addr == 0xFF00) return (mmu_IO_[0x00] & 0x30) | 0xCF;
+	if (addr == 0xFF00) {
+		// Compose joypad readout: top 2 bits = 1, bits 4-5 reflect select, bits 0-3 are active-low input nibble.
+		BYTE nibble = 0x0F;
+		if ((joyp_select_ & 0x10) == 0) nibble &= ~((buttons_ >> 4) & 0x0F); // directions
+		if ((joyp_select_ & 0x20) == 0) nibble &= ~(buttons_ & 0x0F);        // buttons
+		return 0xC0 | (joyp_select_ & 0x30) | nibble;
+	}
 
 	return mmu_IO_[addr - 0xFF00];
 }
@@ -202,6 +225,12 @@ void GBC_BUS::write_io(const WORD addr, const BYTE val) {
 	if (addr <= 0xFF07 && addr >= 0xFF04) { timer_.write(addr, val); return; }
 	if (addr == 0xFF0F) {
 		IF_ = val & 0x1F;
+		return;
+	}
+
+	// Joypad select lines (P14/P15). Only bits 4-5 are writable.
+	if (addr == 0xFF00) {
+		joyp_select_ = val & 0x30;
 		return;
 	}
 

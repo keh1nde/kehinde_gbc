@@ -53,6 +53,7 @@ int main(int argc, char* argv[]) {
 			if (ppu.consume_frame_ready()) {
 				display.present(ppu.framebuffer_view());
 				running = display.pump();
+				bus.set_buttons(display.poll_input());
 			}
 		} catch (const std::exception& e) {
 			std::cerr << "Caught the following error: " << e.what() << std::endl;

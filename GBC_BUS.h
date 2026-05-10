@@ -48,6 +48,10 @@ public:
 	void requestInterrupt(Interrupt which) override;
 
 	void reset();
+
+	// Joypad state. Caller (main loop) polls input each frame and pushes the
+	// bitmask here. Bits: 0=A, 1=B, 2=Select, 3=Start, 4=Right, 5=Left, 6=Up, 7=Down. 1 = pressed.
+	void set_buttons(BYTE buttons);
   // CgbState& cgb();              // TODO: define CgbState before re-enabling
 	// const CgbState& cgb() const;
 
@@ -77,6 +81,11 @@ private:
 
 
 	BYTE sb_ = 0;
+
+	// Joypad. joyp_select_ holds bits 4-5 (P14/P15) as written by the ROM (1=not selected).
+	// buttons_ is the live key state (1 = pressed): 0=A,1=B,2=Select,3=Start,4=Right,5=Left,6=Up,7=Down.
+	BYTE joyp_select_ = 0x30;
+	BYTE buttons_     = 0x00;
 
 	// ---- Helpers
 	BYTE read_io(WORD addr);
