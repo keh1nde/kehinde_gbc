@@ -194,6 +194,7 @@ BYTE GBC_BUS::read_io(const WORD addr) {
 	if (addr == 0xFF4F) return ppu_.read(addr);
 	if (addr >= 0xFF68 && addr <= 0xFF6B) return ppu_.read(addr);
 	if (addr == 0xFF6C) return ppu_.read(addr);
+	if (addr == 0xFF00) return (mmu_IO_[0x00] & 0x30) | 0xCF;
 
 	return mmu_IO_[addr - 0xFF00];
 }
