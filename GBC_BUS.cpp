@@ -227,10 +227,10 @@ void GBC_BUS::write_wram(const WORD addr, const BYTE val) {
 }
 
 BYTE GBC_BUS::read_hram(const WORD addr) const {
-	return mmu_HighRAM_[addr];
+	return mmu_HighRAM_[addr - 0xFF80];
 }
 void GBC_BUS::write_hram(const WORD addr, const BYTE val) {
-	mmu_HighRAM_[addr] = val;
+	mmu_HighRAM_[addr - 0xFF80] = val;
 }
 
 // Address decoding helper
