@@ -216,7 +216,6 @@ void GBC_BUS::write_io(const WORD addr, const BYTE val) {
 	if (addr == 0xFF02 && (val & 0x80)) {
 		std::cout << static_cast<char>(mmu_IO_[0x01]) << std::flush;
 		mmu_IO_[0x02] = val & 0x7F;
-
 	}
 }
 
