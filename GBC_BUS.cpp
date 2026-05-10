@@ -141,7 +141,7 @@ void GBC_BUS::write8(const WORD addr, const BYTE val) {
 	}
 
 	// High RAM
-	if (addr < 0xFFFE && addr >= 0xFF80) {
+	if (addr <= 0xFFFE && addr >= 0xFF80) {
 		write_hram(addr, val); // May expect an offset.
 		return;
 	}
