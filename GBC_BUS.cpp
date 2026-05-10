@@ -4,7 +4,7 @@
 
 #include "GBC_BUS.h"
 
-GBC_BUS::GBC_BUS(const std::string &bootPath, GBC_CART& cart, GBC_PPU& ppu, GBC_TIMER& timer) : cart_(cart), ppu_(ppu), timer_(timer) {
+GBC_BUS::GBC_BUS(const std::string &bootPath, GBC_CART& cart, GBC_PPU& ppu, GBC_TIMER& timer, GBC_APU& apu) : cart_(cart), ppu_(ppu), timer_(timer), apu_(apu) {
 	// Load BootROM.
 	if (!bootPath.empty()) {
 		FILE* file = fopen(bootPath.c_str(),"rb");
@@ -219,6 +219,20 @@ BYTE GBC_BUS::read_io(const WORD addr) {
 	if (addr == 0xFF4F) return ppu_.read(addr);
 	if (addr >= 0xFF68 && addr <= 0xFF6B) return ppu_.read(addr);
 	if (addr == 0xFF6C) return ppu_.read(addr);
+
+	// APU registers + wave RAM
+	if ((addr >= 0xFF10 && addr <= 0xFF26) || (addr >= 0xFF30 && addr <= 0xFF3F)) {
+		return apu_.read(addr);
+	}
+
+	// HDMA source/dest registers — write-only on hardware.
+	if (addr >= 0xFF51 && addr <= 0xFF54) return 0xFF;
+	if (addr == 0xFF55) {
+		// bit 7 = 0 while HBlank-DMA active, low 7 bits = blocks_remaining-1.
+		// When inactive: 0xFF (bit 7 = 1).
+		if (!hdma_active_) return 0xFF;
+		return static_cast<BYTE>((hdma_blocks_remaining_ - 1) & 0x7F);
+	}
 	if (addr == 0xFF00) {
 		// Compose joypad readout: top 2 bits = 1, bits 4-5 reflect select, bits 0-3 are active-low input nibble.
 		BYTE nibble = 0x0F;
@@ -248,6 +262,49 @@ void GBC_BUS::write_io(const WORD addr, const BYTE val) {
 	if (addr >= 0xFF68 && addr <= 0xFF6B)                  { ppu_.write(addr, val); return; }
 	if (addr == 0xFF6C)                                    { ppu_.write(addr, val); return; }
 
+	// APU registers + wave RAM
+	if ((addr >= 0xFF10 && addr <= 0xFF26) || (addr >= 0xFF30 && addr <= 0xFF3F)) {
+		apu_.write(addr, val);
+		return;
+	}
+
+	// HDMA. Source low nibble and dest low nibble are forced to 0; dest high
+	// is masked to 0x1F (VRAM is 0x8000-0x9FFF). 0xFF55 is the trigger.
+	if (addr == 0xFF51) { hdma1_ = val;          return; }
+	if (addr == 0xFF52) { hdma2_ = val & 0xF0;   return; }
+	if (addr == 0xFF53) { hdma3_ = val & 0x1F;   return; }
+	if (addr == 0xFF54) { hdma4_ = val & 0xF0;   return; }
+	if (addr == 0xFF55) {
+		// If an HBlank-DMA is already running, writing here with bit7=0 cancels it.
+		if (hdma_active_ && (val & 0x80) == 0) {
+			hdma_active_ = false;
+			return;
+		}
+
+		const WORD src = (static_cast<WORD>(hdma1_) << 8) | hdma2_;
+		const WORD dst = 0x8000 | (static_cast<WORD>(hdma3_) << 8) | hdma4_;
+		const int  len = ((val & 0x7F) + 1) * 0x10;
+
+		if ((val & 0x80) == 0) {
+			// GDMA: copy everything immediately. CPU stalls on real hardware;
+			// we approximate by doing the copy in zero emulator time.
+			for (int i = 0; i < len; ++i) {
+				ppu_.write(dst + i, read8(src + i));
+			}
+			hdma_src_ = src + len;
+			hdma_dst_ = dst + len;
+			hdma_blocks_remaining_ = 0;
+			hdma_active_ = false;
+		} else {
+			// HBlank-DMA: arm; transfer 0x10 bytes per HBlank in notify_hblank().
+			hdma_src_ = src;
+			hdma_dst_ = dst;
+			hdma_blocks_remaining_ = (val & 0x7F) + 1;
+			hdma_active_ = true;
+		}
+		return;
+	}
+
 	mmu_IO_[addr - 0xFF00] = val;
 
 	if (addr == 0xFF02 && (val & 0x80)) {
@@ -268,6 +325,18 @@ BYTE GBC_BUS::read_hram(const WORD addr) const {
 }
 void GBC_BUS::write_hram(const WORD addr, const BYTE val) {
 	mmu_HighRAM_[addr - 0xFF80] = val;
+}
+
+void GBC_BUS::notify_hblank() {
+	if (!hdma_active_) return;
+	for (int i = 0; i < 0x10; ++i) {
+		ppu_.write(hdma_dst_ + i, read8(hdma_src_ + i));
+	}
+	hdma_src_ += 0x10;
+	hdma_dst_ += 0x10;
+	if (--hdma_blocks_remaining_ == 0) {
+		hdma_active_ = false;
+	}
 }
 
 // Address decoding helper
