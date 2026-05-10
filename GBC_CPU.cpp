@@ -78,6 +78,7 @@ int GBC_CPU::execute() {
 	} latch{this, ime_pending_};
 
 	const BYTE opcode = getNextOpcode();
+
 	if (opcode == 0xCB) {
 		return executeCB();
 	}
