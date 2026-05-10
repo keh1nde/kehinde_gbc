@@ -92,6 +92,14 @@ BYTE GBC_BUS::read8(const WORD addr) {
 }
 
 void GBC_BUS::write8(const WORD addr, const BYTE val) {
+	if (addr == c_OAM_DMA) {
+		const WORD source = static_cast<WORD>(val) << 8;
+		for (int i = 0; i < 0xA0; i++) {
+			ppu_.write(0xFE00 + i, read8(source + i));
+		}
+		mmu_IO_[0x46] = val;
+		return;
+	}
 	if (addr == 0xFF01) {
 		sb_ = val;
 	}
