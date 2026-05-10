@@ -22,7 +22,6 @@ add_executable(kehindes_gameboycolor_emulator main.cpp
         GBC_TIMER.h
         GBC_TIMER.cpp
         GBC_DISPLAY.h
-        GBC_DISPLAY.cpp)
         GBC_DISPLAY.cpp
         GBC_APU.h
         GBC_APU.cpp)
