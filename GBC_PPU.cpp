@@ -400,9 +400,6 @@ void GBC_PPU::write(const WORD addr, const BYTE val) {
 			if (obpi_ & 0x80) obpi_ = (obpi_ & 0x80) | ((obpi_ + 1) & 0x3F);
 			return;
 		case ppu_OPRI:
-			static bool seen = false;
-			if (!seen) {std::cerr << "OPRI write val=0x" << std::hex << (int)val <<
-	"\n"; seen = true;}
 			opri_ = val;
 			return;
 		case ppu_VBK:
