@@ -24,25 +24,57 @@ namespace {
 	}
 }
 
-GBC_CART::GBC_CART(const std::string &romPath) {
-	if (!romPath.empty()) {
-		FILE* file = fopen(romPath.c_str(), "rb");
+GBC_CART::GBC_CART(const std::string& romPath) {
+	if (romPath.empty()) {
+		// Empty-path mode for tests: leave with a 32 KiB no-MBC blank cart.
+		rom_.assign(32 * 1024, 0);
+		rom_bank_count_ = 2;
+		mapper_ = Mapper::None;
+		return;
+	}
 
-		if (!file) {
-			throw std::runtime_error("Could not open cartridge file");
-		}
+	FILE* file = fopen(romPath.c_str(), "rb");
+	if (!file) throw std::runtime_error("Could not open cartridge file");
 
-		fseek(file, 0, SEEK_END);
+	fseek(file, 0, SEEK_END);
+	const long size = ftell(file);
+	fseek(file, 0, SEEK_SET);
 
-		const long size = ftell(file);
-		// std::cout << size << std::endl;
+	rom_.resize(size);
+	fread(rom_.data(), 1, size, file);
+	fclose(file);
 
-		fseek(file, 0, SEEK_SET);
-		if (size > c_CartridgeROM.size()) throw std::runtime_error("ROM size exceeds max size.");
+	if (size < 0x150) throw std::runtime_error("ROM too small to contain a header");
 
-		fread(c_CartridgeROM.data(), 1, size, file);
+	const BYTE cart_type = rom_[0x147];
+	const BYTE rom_code  = rom_[0x148];
+	const BYTE ram_code  = rom_[0x149];
 
-		fclose(file);
+	const int rom_bytes = rom_size_from_header(rom_code);
+	int ram_bytes = ram_size_from_header(ram_code);
+
+	rom_bank_count_ = rom_bytes / (16 * 1024);
+	ram_bank_count_ = ram_bytes / (8 * 1024);
+
+	switch (cart_type) {
+		case 0x00:
+			mapper_ = Mapper::None;
+			break;
+		case 0x01: case 0x02: case 0x03:
+			mapper_ = Mapper::MBC1;
+			break;
+		case 0x05: case 0x06:
+			mapper_ = Mapper::MBC2;
+			// MBC2 has built-in 512x4-bit RAM (256 bytes addressable, mirrored across 0xA000-0xBFFF).
+			ram_bytes = 512;
+			ram_bank_count_ = 1;
+			break;
+		case 0x19: case 0x1A: case 0x1B:
+		case 0x1C: case 0x1D: case 0x1E:
+			mapper_ = Mapper::MBC5;
+			break;
+		default:
+			throw std::runtime_error("Unsupported cartridge type");
 	}
 }
 
