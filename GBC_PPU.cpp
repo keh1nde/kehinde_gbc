@@ -158,25 +158,6 @@ void GBC_PPU::scan_oam_() {
 */
 
 void GBC_PPU::render_scanline_() {
-	static int frame_count = 0;
-	static bool dumped = false;
-	if (ly_ == 0) frame_count++;
-	if (frame_count >= 120 && !dumped) {
-		dumped = true;
-		std::cerr << "--- OAM dump (frame " << frame_count << ") ---\n";
-		for (int i = 0; i < 40; ++i) {
-			const BYTE y = ppu_OAM[i*4 + 0];
-			const BYTE x = ppu_OAM[i*4 + 1];
-			const BYTE t = ppu_OAM[i*4 + 2];
-			const BYTE a = ppu_OAM[i*4 + 3];
-			std::cerr << "oam[" << std::dec << i << "] y=" << (int)y
-					  << " x=" << (int)x << " tile=0x" << std::hex << (int)t
-					  << " attr=0x" << (int)a << std::dec << "\n";
-		}
-		std::cerr << "lcdc=0x" << std::hex << (int)lcdc_
-				  << " opri=0x" << (int)opri_ << std::dec << "\n";
-	}
-
 	// Render BG, window, sprites for line ly_ into framebuffer.
 	// On CGB, LCDC bit 0 is BG-master-priority, not BG enable — BG/window always render.
 	{
