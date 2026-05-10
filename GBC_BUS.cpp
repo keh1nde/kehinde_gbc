@@ -147,10 +147,10 @@ void GBC_BUS::write8(const WORD addr, const BYTE val) {
 	}
 
 	// Interrupt Register
-	if (addr == 0xFFFF) IE_ = val;
+	if (addr == 0xFFFF) {
+		IE_ = val;
+	}
 }
-
-// TODO: Extend implementation to read16 and write16
 
 WORD GBC_BUS::read16(const WORD addr) {
 		//Properly implement cartridge.read_rom(addr)
