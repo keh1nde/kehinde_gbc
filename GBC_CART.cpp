@@ -108,19 +108,149 @@ int GBC_CART::mbc1_ram_bank_() const {
 // ---- read_rom ----
 
 BYTE GBC_CART::read_rom(const WORD addr) const {
-	return c_CartridgeROM[addr];
+	switch (mapper_) {
+		case Mapper::None:
+			if (addr < rom_.size()) return rom_[addr];
+			return 0xFF;
+
+		case Mapper::MBC1: {
+			if (addr < 0x4000) {
+				const int bank = mbc1_rom_bank_lo_region_();
+				const size_t offset = bank * 0x4000 + addr;
+				return offset < rom_.size() ? rom_[offset] : 0xFF;
+			}
+			const int bank = mbc1_rom_bank_hi_region_();
+			const size_t offset = bank * 0x4000 + (addr - 0x4000);
+			return offset < rom_.size() ? rom_[offset] : 0xFF;
+		}
+
+		case Mapper::MBC2: {
+			if (addr < 0x4000) return rom_[addr];
+			BYTE bank = mbc1_rom_lo_ & 0x0F; // reuse mbc1_rom_lo_ as MBC2 bank reg
+			if (bank == 0) bank = 1;
+			bank &= (rom_bank_count_ - 1);
+			const size_t offset = bank * 0x4000 + (addr - 0x4000);
+			return offset < rom_.size() ? rom_[offset] : 0xFF;
+		}
+
+		case Mapper::MBC5: {
+			if (addr < 0x4000) return rom_[addr];
+			const int bank = mbc5_rom_bank_ & (rom_bank_count_ - 1);
+			const size_t offset = bank * 0x4000 + (addr - 0x4000);
+			return offset < rom_.size() ? rom_[offset] : 0xFF;
+		}
+	}
+	return 0xFF;
 }
 
-void GBC_CART::write_rom(WORD addr, BYTE value) {
+// ---- write_rom (MBC control registers) ----
 
+void GBC_CART::write_rom(const WORD addr, const BYTE val) {
+	switch (mapper_) {
+		case Mapper::None:
+			return; // ROM-only carts ignore writes.
+
+		case Mapper::MBC1:
+			if (addr < 0x2000) {
+				ram_enable_ = (val & 0x0F) == 0x0A;
+			} else if (addr < 0x4000) {
+				mbc1_rom_lo_ = val & 0x1F;
+				if (mbc1_rom_lo_ == 0) mbc1_rom_lo_ = 1; // 0->1 quirk applied at write time
+			} else if (addr < 0x6000) {
+				mbc1_upper_ = val & 0x03;
+			} else if (addr < 0x8000) {
+				mbc1_mode_ = (val & 0x01) != 0;
+			}
+			return;
+
+		case Mapper::MBC2:
+			// In MBC2, address bit 8 selects which register: 0 = RAM enable, 1 = ROM bank.
+			if (addr < 0x4000) {
+				if ((addr & 0x0100) == 0) {
+					ram_enable_ = (val & 0x0F) == 0x0A;
+				} else {
+					BYTE bank = val & 0x0F;
+					if (bank == 0) bank = 1;
+					mbc1_rom_lo_ = bank; // reuse field as MBC2 bank
+				}
+			}
+			return;
+
+		case Mapper::MBC5:
+			if (addr < 0x2000) {
+				ram_enable_ = (val & 0x0F) == 0x0A;
+			} else if (addr < 0x3000) {
+				mbc5_rom_bank_ = (mbc5_rom_bank_ & 0x100) | val;
+			} else if (addr < 0x4000) {
+				mbc5_rom_bank_ = (mbc5_rom_bank_ & 0xFF) | ((val & 0x01) << 8);
+			} else if (addr < 0x6000) {
+				mbc5_ram_bank_ = val & 0x0F;
+			}
+			// 0x6000-0x7FFF unused on MBC5.
+			return;
+	}
 }
 
+// ---- read_ram / write_ram ----
 
-BYTE GBC_CART::read_ram(const WORD addr) {
-	return addr;
+BYTE GBC_CART::read_ram(const WORD addr) const {
+	if (!ram_enable_ || ram_.empty()) return 0xFF;
+
+	const WORD off = addr - 0xA000;
+
+	switch (mapper_) {
+		case Mapper::None:
+			return off < ram_.size() ? ram_[off] : 0xFF;
+
+		case Mapper::MBC1: {
+			const int bank = mbc1_ram_bank_();
+			const size_t idx = bank * 0x2000 + off;
+			return idx < ram_.size() ? ram_[idx] : 0xFF;
+		}
+
+		case Mapper::MBC2: {
+			// 512 nibbles, mirrored every 0x200. High nibble reads as 1.
+			const size_t idx = off & 0x1FF;
+			return ram_[idx] | 0xF0;
+		}
+
+		case Mapper::MBC5: {
+			const int bank = ram_bank_count_ > 0 ? (mbc5_ram_bank_ & (ram_bank_count_ - 1)) : 0;
+			const size_t idx = bank * 0x2000 + off;
+			return idx < ram_.size() ? ram_[idx] : 0xFF;
+		}
+	}
+	return 0xFF;
 }
 
-void GBC_CART::write_ram(WORD addr, BYTE input) {
+void GBC_CART::write_ram(const WORD addr, const BYTE val) {
+	if (!ram_enable_ || ram_.empty()) return;
 
+	const WORD off = addr - 0xA000;
+
+	switch (mapper_) {
+		case Mapper::None:
+			if (off < ram_.size()) ram_[off] = val;
+			return;
+
+		case Mapper::MBC1: {
+			const int bank = mbc1_ram_bank_();
+			const size_t idx = bank * 0x2000 + off;
+			if (idx < ram_.size()) ram_[idx] = val;
+			return;
+		}
+
+		case Mapper::MBC2: {
+			const size_t idx = off & 0x1FF;
+			ram_[idx] = val & 0x0F; // only low nibble retained
+			return;
+		}
+
+		case Mapper::MBC5: {
+			const int bank = ram_bank_count_ > 0 ? (mbc5_ram_bank_ & (ram_bank_count_ - 1)) : 0;
+			const size_t idx = bank * 0x2000 + off;
+			if (idx < ram_.size()) ram_[idx] = val;
+			return;
+		}
+	}
 }
-
