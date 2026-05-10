@@ -58,6 +58,9 @@ int GBC_CPU::execute() {
 	// HALT idles the CPU. serviceInterrupts() clears c_Halted on any pending IRQ
 	// (regardless of IME). While halted we burn 4 T-cycles per call so the PPU/timer keep ticking.
 	if (c_Halted) return 4;
+	if (c_Halted) {
+		return 4;
+	}
 
 	// EI's delayed-by-one enable. Snapshot the pending flag *before* dispatching; if it was
 	// already set going into this instruction, promote into c_IME on the way out (RAII latch
