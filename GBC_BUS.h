@@ -13,6 +13,7 @@
 #include <stdexcept>
 
 #include "GBC_TIMER.h"
+#include "GBC_APU.h"
 
 /*
  * Address banking:
@@ -36,7 +37,7 @@
 class GBC_BUS final : public IBus {
 public:
 
-	GBC_BUS(const std::string& bootPath, GBC_CART& cart, GBC_PPU& ppu, GBC_TIMER& timer); // Include all other components later.
+	GBC_BUS(const std::string& bootPath, GBC_CART& cart, GBC_PPU& ppu, GBC_TIMER& timer, GBC_APU& apu);
 
 	BYTE read8(WORD addr) override;
 	void write8(WORD addr, BYTE val) override;
@@ -48,6 +49,8 @@ public:
 	void requestInterrupt(Interrupt which) override;
 
 	void reset();
+
+	void notify_hblank() override;
 
 	// Joypad state. Caller (main loop) polls input each frame and pushes the
 	// bitmask here. Bits: 0=A, 1=B, 2=Select, 3=Start, 4=Right, 5=Left, 6=Up, 7=Down. 1 = pressed.
@@ -73,11 +76,22 @@ private:
 	GBC_CART& cart_;
 	GBC_PPU& ppu_;
 	GBC_TIMER& timer_;
+	GBC_APU& apu_;
 
 	// CgbState cgb_;  // TODO: define CgbState before re-enabling
 
 	// Other members
 	bool bootROM_enabled_ = false;
+
+	// HDMA related members. hdma1..4 store the last value written (with the
+	// hardware bit-masks already applied) so source/dest can be reassembled at
+	// 0xFF55 trigger-time. Reads of FF51..FF54 return 0xFF on real hardware.
+	BYTE hdma1_ = 0, hdma2_ = 0, hdma3_ = 0, hdma4_ = 0;
+	bool hdma_active_ = false;          // HBlank-DMA in progress
+	WORD hdma_src_ = 0;                 // advances by 0x10 per block
+	WORD hdma_dst_ = 0;                 // advances by 0x10 per block (VRAM)
+	BYTE hdma_blocks_remaining_ = 0;    // # of 0x10-byte blocks left
+
 
 
 	BYTE sb_ = 0;
