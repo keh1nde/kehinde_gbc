@@ -69,6 +69,9 @@ GBC_CART::GBC_CART(const std::string& romPath) {
 			ram_bytes = 512;
 			ram_bank_count_ = 1;
 			break;
+		case 0x0F: case 0x10: case 0x11: case 0x12: case 0x13:
+			mapper_ = Mapper::MBC3;
+			break;
 		case 0x19: case 0x1A: case 0x1B:
 		case 0x1C: case 0x1D: case 0x1E:
 			mapper_ = Mapper::MBC5;
@@ -133,6 +136,15 @@ BYTE GBC_CART::read_rom(const WORD addr) const {
 			return offset < rom_.size() ? rom_[offset] : 0xFF;
 		}
 
+		case Mapper::MBC3: {
+			if (addr < 0x4000) return rom_[addr];
+			BYTE bank = mbc3_rom_bank_ & 0x7F;
+			if (bank == 0) bank = 1;
+			bank &= (rom_bank_count_ - 1);
+			const size_t offset = bank * 0x4000 + (addr - 0x4000);
+			return offset < rom_.size() ? rom_[offset] : 0xFF;
+		}
+
 		case Mapper::MBC5: {
 			if (addr < 0x4000) return rom_[addr];
 			const int bank = mbc5_rom_bank_ & (rom_bank_count_ - 1);
@@ -176,6 +188,24 @@ void GBC_CART::write_rom(const WORD addr, const BYTE val) {
 			}
 			return;
 
+		case Mapper::MBC3:
+			if (addr < 0x2000) {
+				// RAM + RTC enable share this region.
+				ram_enable_ = (val & 0x0F) == 0x0A;
+			} else if (addr < 0x4000) {
+				mbc3_rom_bank_ = val & 0x7F;
+				if (mbc3_rom_bank_ == 0) mbc3_rom_bank_ = 1;
+			} else if (addr < 0x6000) {
+				mbc3_ram_rtc_select_ = val;
+			} else if (addr < 0x8000) {
+				// Latch: 0 → 1 transition snapshots the live RTC into the latched copy.
+				if (mbc3_latch_prev_ == 0x00 && val == 0x01) {
+					for (int i = 0; i < 5; ++i) mbc3_rtc_latched_[i] = mbc3_rtc_[i];
+				}
+				mbc3_latch_prev_ = val;
+			}
+			return;
+
 		case Mapper::MBC5:
 			if (addr < 0x2000) {
 				ram_enable_ = (val & 0x0F) == 0x0A;
@@ -194,6 +224,11 @@ void GBC_CART::write_rom(const WORD addr, const BYTE val) {
 // ---- read_ram / write_ram ----
 
 BYTE GBC_CART::read_ram(const WORD addr) const {
+	// MBC3 with RTC selected can read even when no RAM exists; gate that path differently.
+	if (mapper_ == Mapper::MBC3 && ram_enable_ && mbc3_ram_rtc_select_ >= 0x08 && mbc3_ram_rtc_select_ <= 0x0C) {
+		return mbc3_rtc_latched_[mbc3_ram_rtc_select_ - 0x08];
+	}
+
 	if (!ram_enable_ || ram_.empty()) return 0xFF;
 
 	const WORD off = addr - 0xA000;
@@ -214,6 +249,12 @@ BYTE GBC_CART::read_ram(const WORD addr) const {
 			return ram_[idx] | 0xF0;
 		}
 
+		case Mapper::MBC3: {
+			const int bank = ram_bank_count_ > 0 ? (mbc3_ram_rtc_select_ & 0x03 & (ram_bank_count_ - 1)) : 0;
+			const size_t idx = bank * 0x2000 + off;
+			return idx < ram_.size() ? ram_[idx] : 0xFF;
+		}
+
 		case Mapper::MBC5: {
 			const int bank = ram_bank_count_ > 0 ? (mbc5_ram_bank_ & (ram_bank_count_ - 1)) : 0;
 			const size_t idx = bank * 0x2000 + off;
@@ -224,6 +265,12 @@ BYTE GBC_CART::read_ram(const WORD addr) const {
 }
 
 void GBC_CART::write_ram(const WORD addr, const BYTE val) {
+	// MBC3 RTC writes don't depend on cart RAM.
+	if (mapper_ == Mapper::MBC3 && ram_enable_ && mbc3_ram_rtc_select_ >= 0x08 && mbc3_ram_rtc_select_ <= 0x0C) {
+		mbc3_rtc_[mbc3_ram_rtc_select_ - 0x08] = val;
+		return;
+	}
+
 	if (!ram_enable_ || ram_.empty()) return;
 
 	const WORD off = addr - 0xA000;
@@ -243,6 +290,13 @@ void GBC_CART::write_ram(const WORD addr, const BYTE val) {
 		case Mapper::MBC2: {
 			const size_t idx = off & 0x1FF;
 			ram_[idx] = val & 0x0F; // only low nibble retained
+			return;
+		}
+
+		case Mapper::MBC3: {
+			const int bank = ram_bank_count_ > 0 ? (mbc3_ram_rtc_select_ & 0x03 & (ram_bank_count_ - 1)) : 0;
+			const size_t idx = bank * 0x2000 + off;
+			if (idx < ram_.size()) ram_[idx] = val;
 			return;
 		}
 
