@@ -3,7 +3,6 @@
 //
 
 #include "GBC_PPU.h"
-#include <iostream>
 
 
 void GBC_PPU::tick(const BYTE cycles) {
