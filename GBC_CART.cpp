@@ -80,7 +80,32 @@ GBC_CART::GBC_CART(const std::string& romPath) {
 	if (ram_bytes > 0) ram_.assign(ram_bytes, 0);
 }
 
+// ---- MBC1 helpers ----
+
+int GBC_CART::mbc1_rom_bank_lo_region_() const {
+	// 0x0000-0x3FFF read.
+	// In MBC1 mode 0, always bank 0. In mode 1, upper bits affect bank selection
+	// for ROMs >= 1 MiB: bank = (mbc1_upper_ << 5) & (rom_bank_count_ - 1).
+	if (!mbc1_mode_) return 0;
+	const int bank = (mbc1_upper_ << 5) & (rom_bank_count_ - 1);
+	return bank;
 }
+
+int GBC_CART::mbc1_rom_bank_hi_region_() const {
+	// 0x4000-0x7FFF read. (mbc1_upper_ << 5) | mbc1_rom_lo_ with 0->1 quirk on lo.
+	BYTE lo = mbc1_rom_lo_ & 0x1F;
+	if (lo == 0) lo = 1;
+	const int bank = ((mbc1_upper_ << 5) | lo) & (rom_bank_count_ - 1);
+	return bank;
+}
+
+int GBC_CART::mbc1_ram_bank_() const {
+	// In mode 1, RAM bank = mbc1_upper_ (for 32 KiB RAM carts). In mode 0, bank 0.
+	if (ram_bank_count_ <= 1) return 0;
+	return mbc1_mode_ ? (mbc1_upper_ & (ram_bank_count_ - 1)) : 0;
+}
+
+// ---- read_rom ----
 
 BYTE GBC_CART::read_rom(const WORD addr) const {
 	return c_CartridgeROM[addr];
