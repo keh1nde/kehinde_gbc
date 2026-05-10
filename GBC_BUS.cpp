@@ -153,9 +153,9 @@ void GBC_BUS::write8(const WORD addr, const BYTE val) {
 }
 
 WORD GBC_BUS::read16(const WORD addr) {
-		//Properly implement cartridge.read_rom(addr)
-		const BYTE lo = read8(addr);
-		const BYTE hi = read8(addr + 1);
+	//Properly implement cartridge.read_rom(addr)
+	const BYTE lo = read8(addr);
+	const BYTE hi = read8(addr + 1);
 
 
 	return (hi << 8) | lo;
