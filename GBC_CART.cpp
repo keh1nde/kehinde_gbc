@@ -4,6 +4,25 @@
 
 #include "GBC_CART.h"
 
+namespace {
+	int rom_size_from_header(BYTE h148) {
+		// Header byte 0x148: total ROM size = 32 KiB << h148 for h148 in 0..8.
+		// (Values 0x52/0x53/0x54 are non-standard and rarely used; ignore.)
+		return (32 * 1024) << h148;
+	}
+
+	int ram_size_from_header(BYTE h149) {
+		switch (h149) {
+			case 0x00: return 0;
+			case 0x01: return 2 * 1024;     // legacy / unofficial
+			case 0x02: return 8 * 1024;
+			case 0x03: return 32 * 1024;
+			case 0x04: return 128 * 1024;
+			case 0x05: return 64 * 1024;
+			default:   return 0;
+		}
+	}
+}
 
 GBC_CART::GBC_CART(const std::string &romPath) {
 	if (!romPath.empty()) {
