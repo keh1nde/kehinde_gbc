@@ -1645,7 +1645,14 @@ void GBC_CPU::HALT() {
 void GBC_CPU::STOP() {
 	// STOP is encoded as 0x10 0x00 — consume the trailing byte.
 	getNextOpcode();
-	c_Halted = true;
+	// When KEY1 (FF4D) has its prepare bit set, STOP performs a speed switch
+	// and the CPU continues executing. Otherwise STOP halts in the usual way.
+	const BYTE key1 = bus_.read8(0xFF4D);
+	if (key1 & 0x01) {
+		bus_.stop_executed();
+	} else {
+		c_Halted = true;
+	}
 }
 
 void GBC_CPU::DI() {
