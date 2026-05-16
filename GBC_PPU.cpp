@@ -11,8 +11,7 @@ void GBC_PPU::tick(const BYTE cycles) {
 	while (dot_ >= get_duration_(mode_)) {
 		dot_ -= get_duration_(mode_);
 
-		// Do work
-
+		const int prev_mode = mode_;
 
 		// Do exit-work
 		switch (mode_) {
@@ -51,6 +50,11 @@ void GBC_PPU::tick(const BYTE cycles) {
 			}
 		} else {
 			mode_ = get_next_step_(mode_);
+		}
+
+		// HDMA HBlank trigger — fires once on Drawing→HBlank entry.
+		if (prev_mode == Drawing && mode_ == HBlank && bus_) {
+			bus_->notify_hblank();
 		}
 
 		// STAT IRQ: edge-triggered on the OR of all enabled sources.
