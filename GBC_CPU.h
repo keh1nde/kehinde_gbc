@@ -26,6 +26,9 @@ public:
 	void resetPostBootARegister();
 
 private:
+	// For debugging purposes.
+	// std::array<WORD, 256> pc_ring_{};
+	// int pc_idx_ = 0;
 
 	WORD c_StackPointer;
 	WORD c_ProgramCounter;
