@@ -63,6 +63,13 @@ struct IBus { // Interface for the CPU to access memory of components
 	virtual void write16(WORD addr, WORD val) = 0;
 
 	virtual void requestInterrupt(Interrupt which) = 0;
+
+	virtual void notify_hblank() {}
+
+	// Called by the CPU when it executes STOP. The bus uses this to complete
+	// a pending KEY1 speed switch (FF4D) — toggles the speed bit and clears
+	// the prepare bit. Default no-op for stub buses.
+	virtual void stop_executed() {}
 };
 
 
