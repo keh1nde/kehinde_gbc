@@ -51,6 +51,7 @@ public:
 	void reset();
 
 	void notify_hblank() override;
+	void stop_executed() override;
 
 	// Joypad state. Caller (main loop) polls input each frame and pushes the
 	// bitmask here. Bits: 0=A, 1=B, 2=Select, 3=Start, 4=Right, 5=Left, 6=Up, 7=Down. 1 = pressed.
@@ -95,6 +96,13 @@ private:
 
 
 	BYTE sb_ = 0;
+
+	// KEY1 (FF4D). Speed-switch stub: we don't actually run the CPU faster in
+	// double-speed mode (timing-wise we lie), but we surface the bit toggles
+	// that CGB-only games wait on after STOP. Without this, games like 007,
+	// SMB Deluxe, and Zelda Oracle infinite-loop on the speed-switch wait.
+	bool key1_prepare_ = false;
+	bool key1_double_speed_ = false;
 
 	// Joypad. joyp_select_ holds bits 4-5 (P14/P15) as written by the ROM (1=not selected).
 	// buttons_ is the live key state (1 = pressed): 0=A,1=B,2=Select,3=Start,4=Right,5=Left,6=Up,7=Down.
