@@ -8,6 +8,7 @@
 #include <vector>
 #include <cstdio>
 #include <stdexcept>
+#include <iostream>
 
 class GBC_CART {
 public:
