@@ -220,6 +220,14 @@ BYTE GBC_BUS::read_io(const WORD addr) {
 	if (addr >= 0xFF68 && addr <= 0xFF6B) return ppu_.read(addr);
 	if (addr == 0xFF6C) return ppu_.read(addr);
 
+	// KEY1 (FF4D). Bit 7 = current speed (0=normal, 1=double), bit 0 = prepare,
+	// bits 1..6 read as 1.
+	if (addr == 0xFF4D) {
+		return static_cast<BYTE>((key1_double_speed_ ? 0x80 : 0x00)
+		                       | (key1_prepare_      ? 0x01 : 0x00)
+		                       | 0x7E);
+	}
+
 	// APU registers + wave RAM
 	if ((addr >= 0xFF10 && addr <= 0xFF26) || (addr >= 0xFF30 && addr <= 0xFF3F)) {
 		return apu_.read(addr);
@@ -261,6 +269,9 @@ void GBC_BUS::write_io(const WORD addr, const BYTE val) {
 	if (addr == 0xFF4F)                                    { ppu_.write(addr, val); return; }
 	if (addr >= 0xFF68 && addr <= 0xFF6B)                  { ppu_.write(addr, val); return; }
 	if (addr == 0xFF6C)                                    { ppu_.write(addr, val); return; }
+
+	// KEY1 (FF4D). Only bit 0 is writable.
+	if (addr == 0xFF4D) { key1_prepare_ = (val & 0x01) != 0; return; }
 
 	// APU registers + wave RAM
 	if ((addr >= 0xFF10 && addr <= 0xFF26) || (addr >= 0xFF30 && addr <= 0xFF3F)) {
@@ -325,6 +336,15 @@ BYTE GBC_BUS::read_hram(const WORD addr) const {
 }
 void GBC_BUS::write_hram(const WORD addr, const BYTE val) {
 	mmu_HighRAM_[addr - 0xFF80] = val;
+}
+
+void GBC_BUS::stop_executed() {
+	// KEY1 speed-switch completion. We don't change emulator timing — games
+	// only need to see the bit toggle so they stop waiting on the switch.
+	if (key1_prepare_) {
+		key1_double_speed_ = !key1_double_speed_;
+		key1_prepare_ = false;
+	}
 }
 
 void GBC_BUS::notify_hblank() {
