@@ -68,7 +68,7 @@ private:
 	std::array<BYTE, 0x8000> mmu_WorkRAM_{};
 	std::array<BYTE, 0x007F> mmu_HighRAM_{};
 	std::array<BYTE, 0x900> mmu_BootROM_{};
-	std::array<BYTE, 0x80> mmu_IO_{}; // Public for testing
+	std::array<BYTE, 0x80> mmu_IO_{}; // Public for test-sys
 
 	// Interrupt registers
 	BYTE IF_ = 0xE1; // FF0F

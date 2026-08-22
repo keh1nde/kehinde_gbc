@@ -1,8 +1,11 @@
 # Testing Directories
-test-roms
-gameboy-doctor
-mooneye-test-suite
+p-docs/p-test/test-roms
+p-docs/p-test/
 
+p-docs/
+
+# web app build artifacts
+build-sys/build-web
 
 # Compiled object files
 *.o
@@ -108,7 +111,6 @@ cmake-build-release/
 DerivedData/
 
 # Testing
-Testing/
 CTestCostData.txt
 
 # Profiling
@@ -123,3 +125,4 @@ perf.data.old
 .DS_Store
 Thumbs.db
 desktop.ini
+/build-sys/build-web/

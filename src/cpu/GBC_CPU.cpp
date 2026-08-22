@@ -2088,7 +2088,7 @@ void GBC_CPU::generalCprInstruction(const BYTE source_val) {
 // So rather than enumerating 256 cases we decode fields and dispatch.
 
 void GBC_CPU::pushWord(const WORD val) {
-	c_StackPointer -= 2; // Changed independently for testing, was 2 previously.
+	c_StackPointer -= 2; // Changed independently for test-sys, was 2 previously.
 	bus_.write16(c_StackPointer, val);
 }
 

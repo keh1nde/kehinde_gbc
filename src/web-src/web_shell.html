@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>kehindes-gameboycolor-emulator</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #1a1a1a;
+    color: #eee;
+    font-family: system-ui, -apple-system, sans-serif;
+    height: 100%;
+    overflow: hidden;
+  }
+  #wrap {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  /* SDL Emscripten port writes to id="canvas" by default. */
+  canvas#canvas {
+    display: block;
+    background: #000;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    outline: none;
+    max-width: 100%;
+    max-height: 100%;
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    z-index: 10;
+  }
+  #overlay h2 {
+    font-size: 1.6rem;
+    margin: 0 0 0.5rem;
+  }
+  #overlay p {
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    opacity: 0.85;
+  }
+  #overlay .controls {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    opacity: 0.7;
+    text-align: center;
+    line-height: 1.5;
+  }
+  #status {
+    position: absolute;
+    bottom: 6px;
+    left: 8px;
+    font-size: 0.75rem;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
+  <div id="overlay">
+    <h2>Game Boy Color Emulator</h2>
+    <p>Tetris DX</p>
+    <p><strong>Click to start</strong></p>
+    <div class="controls">
+      WASD = D-pad &nbsp;·&nbsp; N = A &nbsp;·&nbsp; M = B<br>
+      Enter = Start &nbsp;·&nbsp; Right Shift = Select
+    </div>
+  </div>
+  <div id="status">loading…</div>
+</div>
+
+<script>
+  var statusEl = document.getElementById('status');
+  var overlayEl = document.getElementById('overlay');
+  var canvasEl = document.getElementById('canvas');
+
+  var Module = {
+    canvas: canvasEl,
+    print: function(text) { console.log(text); },
+    printErr: function(text) { console.warn(text); },
+    setStatus: function(text) {
+      if (statusEl) statusEl.textContent = text || '';
+    },
+    totalDependencies: 0,
+    monitorRunDependencies: function(left) {
+      this.totalDependencies = Math.max(this.totalDependencies, left);
+      Module.setStatus(left
+        ? 'loading… (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')'
+        : 'ready — click to start');
+    }
+  };
+
+  // Audio contexts start suspended in modern browsers — resume on first user gesture.
+  // Also hide overlay and focus canvas for keyboard input.
+  function startEmulator() {
+    overlayEl.style.display = 'none';
+    canvasEl.focus();
+    try {
+      if (typeof Module !== 'undefined' && Module.SDL2 && Module.SDL2.audioContext) {
+        var ctx = Module.SDL2.audioContext;
+        if (ctx.state === 'suspended') ctx.resume();
+      }
+    } catch (e) { console.warn('audio resume failed', e); }
+    statusEl.style.display = 'none';
+  }
+  overlayEl.addEventListener('click', startEmulator, { once: true });
+
+  // Block default browser scroll on arrow keys / space when canvas has focus.
+  window.addEventListener('keydown', function(e) {
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].indexOf(e.key) !== -1) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+</script>
+
+{{{ SCRIPT }}}
+</body>
+</html>

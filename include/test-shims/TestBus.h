@@ -5,7 +5,7 @@
 #ifndef KEHINDES_GAMEBOYCOLOR_EMULATOR_TESTBUS_H
 #define KEHINDES_GAMEBOYCOLOR_EMULATOR_TESTBUS_H
 
-#include "GBC_Types.h"
+#include "../GBC_Types.h"
 #include <array>
 #include <iostream>
 
