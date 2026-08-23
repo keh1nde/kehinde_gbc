@@ -4,7 +4,7 @@
 ![gameplay](docs/kehinde-gbc-demo.gif)
 ---
 
-kehinde-gbc is Game Boy Color emulator. It accurately implements the SM83 CPU core, memory bus and the PPU with cycle-accurate scanline timing. The emulator also uses SDL2 for display out and input.
+kehinde-gbc is a Game Boy Color emulator. It accurately implements the SM83 CPU core, memory bus and the PPU with cycle-accurate scanline timing. The emulator also uses SDL2 for display out and input.
 
 Licensed under the MIT License. See [LICENSE](LICENSE)
 
