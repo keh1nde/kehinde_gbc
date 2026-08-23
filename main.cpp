@@ -8,8 +8,24 @@
 #include <vector>
 
 int main(int argc, char* argv[]) {
+	GBC_DISPLAY display;
+	if (!display.init(4)) return 1;
 
-	const std::string romPath = argv[1];
+	std::string romPath;
+	if (argc > 1) {
+		romPath = argv[1];
+	} else {
+		std::cerr << "No ROM given. Please drag a .gb/.gbc file onto the window to load one.\n";
+		while (true) {
+			if (!display.pump()) return 0; // user closed the window before dropping a ROM
+			if (auto dropped = display.consume_dropped_path()) {
+				romPath = *dropped;
+				break;
+			}
+			display.present_drop_prompt();
+			SDL_Delay(16);
+		}
+	}
 
 	GBC_PPU ppu{};
 	GBC_CART cart(romPath);
@@ -28,9 +44,6 @@ int main(int argc, char* argv[]) {
 	ppu.resetPostBoot();
 	timer.resetPostBoot();
 	apu.resetPostBoot();
-
-	GBC_DISPLAY display;
-	if (!display.init(4)) return 1;
 
 	// SDL audio: 48 kHz S16 stereo. Pull from APU each frame.
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) {
