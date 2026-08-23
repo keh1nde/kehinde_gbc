@@ -56,10 +56,25 @@ set_target_properties(kehindes_gameboycolor_emulator PROPERTIES
     MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
 )
 
+if(APPLE)
+    # Copy assets/ into the bundle's Contents/Resources/ after every build,
+    # not just at install time — a plain `cmake --build` (which is all CLion
+    # runs by default) never executes install(), so without this the bundle
+    # sitting in cmake-build-debug/ would have an empty Resources/ and
+    # IMG_Load would fail with "No such file or directory" even though the
+    # path logic itself is correct.
+    add_custom_command(TARGET kehindes_gameboycolor_emulator POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/../assets
+            "$<TARGET_BUNDLE_CONTENT_DIR:kehindes_gameboycolor_emulator>/Resources/assets"
+        COMMENT "Copying assets/ into the built bundle's Contents/Resources/"
+    )
+endif()
+
 install(TARGETS kehindes_gameboycolor_emulator BUNDLE DESTINATION .)
 
-# assets/ -> Contents/Resources/assets/, so GBC_DISPLAY's SDL_GetBasePath()-relative
-# resolution finds ../Resources/assets/... alongside the executable's ../MacOS/.
+# assets/ -> Contents/Resources/assets/ in the *installed* copy (a separate
+# tree from the one POST_BUILD above populates in the build directory).
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../assets
         DESTINATION kehindes_gameboycolor_emulator.app/Contents/Resources)
 

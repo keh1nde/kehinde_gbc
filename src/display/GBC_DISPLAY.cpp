@@ -4,18 +4,7 @@
 #include <iostream>
 
 namespace {
-// Resolved relative to the running executable's own directory (via
-// SDL_GetBasePath), not the process's working directory — a cwd-relative
-// path only works when launched from repo root, which CLion's default run
-// config doesn't do and a downloaded release binary has no notion of at all.
-//
-// Two possible layouts depending on how this was built:
-//   - packaged .app bundle: executable sits in Contents/MacOS/, assets are
-//     installed to Contents/Resources/assets/ -> one level up, into Resources.
-//   - dev build (build-sys/build/ or build-sys/cmake-build-debug/): assets
-//     live at repo root -> two levels up from the executable.
-// Probe both and use whichever actually exists on disk; existence is checked
-// against the already-resolved absolute candidate, never re-derived from cwd.
+
 std::string resolve_asset_path(const std::string& relative_to_root) {
     char* base_c = SDL_GetBasePath();
     if (!base_c) return relative_to_root;
@@ -23,8 +12,8 @@ std::string resolve_asset_path(const std::string& relative_to_root) {
     SDL_free(base_c);
 
     const std::string candidates[] = {
-        base + "../Resources/" + relative_to_root,  // .app bundle
-        base + "../../" + relative_to_root,         // dev build
+        base + relative_to_root,             // .app bundle
+        base + "../../" + relative_to_root,  // non-bundle build
     };
     for (const auto& candidate : candidates) {
         if (std::filesystem::exists(candidate)) return candidate;
