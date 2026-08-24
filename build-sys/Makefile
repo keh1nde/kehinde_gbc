@@ -20,11 +20,11 @@ web-clean:
 # and not something a source indexer should ever look at.
 prod-clean:
 	rm -rf dist build/package
+	rm -rf dist kehindes_gameboycolor_emulator.app
 
 clean-all: clean web-clean prod-clean
 
 rebuild: clean build
 
 install:
-	cd ..
 	cmake --install build --prefix "$(CURDIR)/dist"
