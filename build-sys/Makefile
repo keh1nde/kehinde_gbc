@@ -1,9 +1,9 @@
-.PHONY: all build clean web-clean prod-clean clean-all rebuild
+.PHONY: all build clean web-clean prod-clean clean-all rebuild install
 
 all: build
 
 build:
-	cmake -S . -B build
+	cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake
 	cmake --build build
 
 # Full removal, not `cmake --build --target clean` — that only deletes
@@ -24,3 +24,7 @@ prod-clean:
 clean-all: clean web-clean prod-clean
 
 rebuild: clean build
+
+install:
+	cd ..
+	cmake --install build --prefix "$(CURDIR)/dist"

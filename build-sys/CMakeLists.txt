@@ -39,7 +39,7 @@ add_executable(kehindes_gameboycolor_emulator MACOSX_BUNDLE ../main.cpp
         ../src/apu/GBC_APU.cpp)
 
 target_include_directories(kehindes_gameboycolor_emulator PRIVATE ${SDL2_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../include)
-target_link_libraries(kehindes_gameboycolor_emulator PRIVATE ${SDL2_LIBRARIES} SDL2_image::SDL2_image)
+target_link_libraries(kehindes_gameboycolor_emulator PRIVATE ${SDL2_LIBRARIES} SDL2_image::SDL2_image-static)
 
 # --- macOS .app bundle packaging ---
 # MACOSX_BUNDLE (above) makes `cmake --build` produce a .app instead of a bare
@@ -50,7 +50,7 @@ target_link_libraries(kehindes_gameboycolor_emulator PRIVATE ${SDL2_LIBRARIES} S
 # running it (see otool -L on a plain build — it hardcodes /opt/homebrew paths).
 set_target_properties(kehindes_gameboycolor_emulator PROPERTIES
     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in
-    MACOSX_BUNDLE_BUNDLE_NAME "kehindes-gbc"
+    MACOSX_BUNDLE_BUNDLE_NAME "kehinde-gbc"
     MACOSX_BUNDLE_GUI_IDENTIFIER "com.kehindeadeoso.gbc"
     MACOSX_BUNDLE_BUNDLE_VERSION "0.1.0"
     MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
@@ -71,12 +71,21 @@ if(APPLE)
     )
 endif()
 
-install(TARGETS kehindes_gameboycolor_emulator BUNDLE DESTINATION .)
+if(APPLE)
+    install(TARGETS kehindes_gameboycolor_emulator BUNDLE DESTINATION .)
 
-# assets/ -> Contents/Resources/assets/ in the *installed* copy (a separate
-# tree from the one POST_BUILD above populates in the build directory).
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../assets
-        DESTINATION kehindes_gameboycolor_emulator.app/Contents/Resources)
+    # assets/ -> Contents/Resources/assets/ in the *installed* copy (a separate
+    # tree from the one POST_BUILD above populates in the build directory).
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../assets
+            DESTINATION kehindes_gameboycolor_emulator.app/Contents/Resources)
+elseif(LINUX)
+    install(TARGETS kehindes_gameboycolor_emulator RUNTIME DESTINATION bin)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../assets DESTINATION ../assets)
+else() # Windows
+    install(TARGETS kehindes_gameboycolor_emulator RUNTIME DESTINATION .)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../assets DESTINATION ../assets)
+endif()
+
 
 if(APPLE)
     # Extra search dirs for transitive @rpath-relative deps (e.g. SDL2_image's
@@ -98,7 +107,7 @@ if(APPLE)
     # that verifies as invalid ("code or signature have been modified").
     install(CODE "
         include(BundleUtilities)
-        fixup_bundle(\"\${CMAKE_INSTALL_PREFIX}/kehindes_gameboycolor_emulator.app\" \"\" \"/opt/homebrew/lib\")
+        fixup_bundle(\"\${CMAKE_INSTALL_PREFIX}/kehindes_gameboycolor_emulator.app\" \"\" \"\")
         execute_process(
             COMMAND codesign --force --deep --sign - \"\${CMAKE_INSTALL_PREFIX}/kehindes_gameboycolor_emulator.app\"
             RESULT_VARIABLE _gbc_codesign_result
@@ -109,7 +118,7 @@ if(APPLE)
     ")
 endif()
 
-set(CPACK_PACKAGE_NAME "kehindes-gbc")
+set(CPACK_PACKAGE_NAME "kehinde-gbc")
 set(CPACK_PACKAGE_VERSION "${MACOSX_BUNDLE_SHORT_VERSION_STRING}")
 set(CPACK_GENERATOR "DragNDrop")
 include(CPack)

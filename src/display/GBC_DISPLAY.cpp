@@ -12,8 +12,9 @@ std::string resolve_asset_path(const std::string& relative_to_root) {
     SDL_free(base_c);
 
     const std::string candidates[] = {
-        base + relative_to_root,             // .app bundle
-        base + "../../" + relative_to_root,  // non-bundle build
+        base + relative_to_root,             // .app bundle or Windows install dir
+        base + "../" + relative_to_root,     // bin/ convention, Linux builds
+        base + "../../" + relative_to_root,  // dev build
     };
     for (const auto& candidate : candidates) {
         if (std::filesystem::exists(candidate)) return candidate;
@@ -37,7 +38,7 @@ bool GBC_DISPLAY::init(const int scale) {
         return false;
     }
     window_ = SDL_CreateWindow(
-        "kehindes-gbc",
+        "kehinde-gbc",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         160 * scale, 144 * scale,
         SDL_WINDOW_SHOWN);
