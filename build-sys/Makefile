@@ -19,7 +19,7 @@ web-clean:
 # every embedded dylib from the .app bundle fixup — large, binary-heavy,
 # and not something a source indexer should ever look at.
 prod-clean:
-	rm -rf dist
+	rm -rf dist/
 
 clean-all: clean web-clean prod-clean
 
