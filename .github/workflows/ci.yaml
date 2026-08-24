@@ -13,6 +13,6 @@ jobs:
       - name: Build
         run: cmake --build build-sys/build
       - name: Install
-        run: cmake --install build-sys/build --prefix build-sys/dist
+        run: cmake --install build-sys/build --prefix $GITHUB_WORKSPACE/build-sys/dist
       - name: Verify codesign
         run: codesign --verify --deep --strict build-sys/dist/kehindes_gameboycolor_emulator.app
