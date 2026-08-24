@@ -1,0 +1,18 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  build-macos:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up vcpkg
+        uses: lukka/run-vcpkg@v11
+      - name: Configure
+        run: cmake -S build-sys -B build-sys/build -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build-sys/build
+      - name: Install
+        run: cmake --install build-sys/build --prefix $GITHUB_WORKSPACE/build-sys/dist
+      - name: Verify codesign
+        run: codesign --verify --deep --strict build-sys/dist/kehindes_gameboycolor_emulator.app
