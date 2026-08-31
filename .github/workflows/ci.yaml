@@ -22,7 +22,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Get dependencies
-        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxext-dev libwayland-dev
+        run: sudo apt-get update && sudo apt-get install -y autoconf autoconf-archive automake libtool libx11-dev libxext-dev libwayland-dev
       - name: Set up vcpkg
         uses: lukka/run-vcpkg@v11
       - name: Configure
@@ -33,6 +33,9 @@ jobs:
         run: cmake --install build-sys/build --prefix $GITHUB_WORKSPACE/build-sys/dist
   build-windows:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout
         uses: actions/checkout@v4
