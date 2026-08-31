@@ -4,6 +4,8 @@
 
 #include "GBC_BUS.h"
 
+#include <stdexcept>
+
 GBC_BUS::GBC_BUS(const std::string &bootPath, GBC_CART& cart, GBC_PPU& ppu, GBC_TIMER& timer, GBC_APU& apu) : cart_(cart), ppu_(ppu), timer_(timer), apu_(apu) {
 	// Load BootROM.
 	if (!bootPath.empty()) {

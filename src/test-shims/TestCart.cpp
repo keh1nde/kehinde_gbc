@@ -4,6 +4,7 @@
 
 #include "test-shims/TestCart.h"
 
+#include <stdexcept>
 
 TestCart::TestCart(const std::string &romPath) {
 	if (!romPath.empty()) {
