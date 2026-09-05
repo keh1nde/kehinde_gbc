@@ -25,4 +25,4 @@ target_include_directories(gbc_test PRIVATE ${Stb_INCLUDE_DIR})
 target_compile_definitions(gbc_test PRIVATE GBC_REPO_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/..")
 
 include(GoogleTest)
-gtest_discover_tests(gbc_test)
+gtest_discover_tests(gbc_test DISCOVERY_MODE PRE_TEST)
