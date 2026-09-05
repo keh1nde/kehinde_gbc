@@ -64,6 +64,10 @@ jobs:
           
           git -C "p-docs/p-test/$dest" checkout "$ref"
           
+          if [ "$submodules" == "true" ]; then
+            git -C "p-docs/p-test/$dest" submodule update --init --recursive
+          fi
+          
           if [ $build == "true" ]; then
             make -C "p-docs/p-test/$dest"
           fi

@@ -19,6 +19,9 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../test-sys ${CMAKE_CURRENT_BINARY_
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
 
+cmake_policy(SET CMP0091 NEW)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 add_executable(kehindes_gameboycolor_emulator MACOSX_BUNDLE
         ../main.cpp
         ../include/GBC_DISPLAY.h
