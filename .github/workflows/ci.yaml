@@ -22,15 +22,48 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Get dependencies
-        run: sudo apt-get update && sudo apt-get install -y autoconf autoconf-archive automake libtool libltdl-dev libx11-dev libxext-dev libwayland-dev
+        run: sudo apt-get update && sudo apt-get install -y autoconf autoconf-archive automake libtool rgbds libltdl-dev libx11-dev libxext-dev libwayland-dev
       - name: Set up vcpkg
         uses: lukka/run-vcpkg@v11
+      - name: clone WLA-DX
+        run: git clone https://github.com/vhelin/wla-dx.git
       - name: Configure
         run: cmake -S build-sys -B build-sys/build -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build-sys/build
       - name: Install
         run: cmake --install build-sys/build --prefix $GITHUB_WORKSPACE/build-sys/dist
+      - name: build WLA-DX and add to PATH
+        run: |
+          cd wla-dx
+          cmake -S . -B build
+          cmake --build build
+          echo "$GITHUB_WORKSPACE/wla-dx/build/binaries" >> "$GITHUB_PATH"
+      - name: clone test utilities/roms
+        run: |
+          jq -c '.suites[]' test-sys/tests.json | while read -r suite; do
+          name=$(echo "$suite" | jq -r '.name')
+          repo=$(echo "$suite" | jq -r '.repo')
+          ref=$(echo "$suite" | jq -r '.ref')
+          dest=$(echo "$suite"| jq -r '.dest')
+          submodules=$(echo "$suite" | jq -r '.submodules')
+          build=$(echo "$suite" | jq -r '.build')
+          
+          if [ $submodules == "true" ]; then 
+            git clone "$repo" --recurse-submodules "p-docs/p-test/$dest"
+          else
+            git clone "$repo" "p-docs/p-test/$dest"
+          fi
+          
+          git -C "p-docs/p-test/$dest" checkout "$ref"
+          
+          if [ $build == "true" ]; then
+            make -C "p-docs/p-test/$dest"
+          fi
+          done
+      - name: test
+        continue-on-error: true
+        run: ctest --test-dir build-sys/build --output-on-failure
   build-windows:
     runs-on: windows-latest
     defaults:

@@ -13,8 +13,10 @@ BYTE TestBus::read8(const WORD addr) {
 }
 
 void TestBus::write8(const WORD addr, const BYTE data) {
-	if (addr == 0xFF02 && data == 0x81){
-		std::cout << static_cast<char>(mem_[0xFF01]) << std::flush;
+	if (addr == 0xFF02 && (data & 0x80)){
+		const char c = static_cast<char>(mem_[0xFF01]);
+		std::cout << c << std::flush;
+		serial_output_ += c;
 	}
 	mem_[addr] = data;
 }

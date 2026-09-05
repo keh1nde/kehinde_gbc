@@ -11,13 +11,20 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin" AND NOT DEFINED CMAKE_OSX_SYSROOT)
 endif()
 
 project(kehindes_gameboycolor_emulator)
-
+enable_testing()
 set(CMAKE_CXX_STANDARD 20)
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../test-sys ${CMAKE_CURRENT_BINARY_DIR}/test-sys)
 
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
 
-add_executable(kehindes_gameboycolor_emulator MACOSX_BUNDLE ../main.cpp
+add_executable(kehindes_gameboycolor_emulator MACOSX_BUNDLE
+        ../main.cpp
+        ../include/GBC_DISPLAY.h
+        ../src/display/GBC_DISPLAY.cpp)
+
+add_library(gbc_core STATIC
         ../include/GBC_CPU.h
         ../src/cpu/GBC_CPU.cpp
         ../include/GBC_BUS.h
@@ -33,13 +40,16 @@ add_executable(kehindes_gameboycolor_emulator MACOSX_BUNDLE ../main.cpp
         ../src/test-shims/TestCart.cpp
         ../include/GBC_TIMER.h
         ../src/timer/GBC_TIMER.cpp
-        ../include/GBC_DISPLAY.h
-        ../src/display/GBC_DISPLAY.cpp
         ../include/GBC_APU.h
         ../src/apu/GBC_APU.cpp)
 
-target_include_directories(kehindes_gameboycolor_emulator PRIVATE ${SDL2_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../include)
-target_link_libraries(kehindes_gameboycolor_emulator PRIVATE ${SDL2_LIBRARIES} SDL2_image::SDL2_image-static)
+target_include_directories(gbc_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_include_directories(kehindes_gameboycolor_emulator PRIVATE ${SDL2_INCLUDE_DIRS})
+target_link_libraries(kehindes_gameboycolor_emulator PRIVATE
+        gbc_core
+        ${SDL2_LIBRARIES}
+        SDL2_image::SDL2_image-static)
+
 
 # --- macOS .app bundle packaging ---
 # MACOSX_BUNDLE (above) makes `cmake --build` produce a .app instead of a bare

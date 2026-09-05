@@ -102,9 +102,7 @@ void GBC_BUS::write8(const WORD addr, const BYTE val) {
 		mmu_IO_[0x46] = val;
 		return;
 	}
-	if (addr == 0xFF01) {
-		sb_ = val;
-	}
+
 	// ROM Bank from 00 to NN
 	if (addr < 0x8000) {
 		cart_.write_rom(addr, val);
@@ -315,15 +313,16 @@ void GBC_BUS::write_io(const WORD addr, const BYTE val) {
 			hdma_blocks_remaining_ = (val & 0x7F) + 1;
 			hdma_active_ = true;
 		}
-		return;
+	}
+
+	if (addr == 0xFF02 && (val & 0x80)) {
+		const char c = static_cast<char>(mmu_IO_[0x01]);
+		std::cout << c << std::flush;
+		serial_output_ += c;
+		mmu_IO_[0x02] = val & 0x7F;
 	}
 
 	mmu_IO_[addr - 0xFF00] = val;
-
-	if (addr == 0xFF02 && (val & 0x80)) {
-		std::cout << static_cast<char>(mmu_IO_[0x01]) << std::flush;
-		mmu_IO_[0x02] = val & 0x7F;
-	}
 }
 
 BYTE GBC_BUS::read_wram(const WORD addr) const {

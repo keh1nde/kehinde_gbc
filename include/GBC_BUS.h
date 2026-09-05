@@ -59,8 +59,8 @@ public:
   // CgbState& cgb();              // TODO: define CgbState before re-enabling
 	// const CgbState& cgb() const;
 
-
-
+	// used by the testing framework
+	const std::string& serial_output() const { return serial_output_; }
 private:
 	// TODO: Include all other components later.
 
@@ -93,10 +93,6 @@ private:
 	WORD hdma_dst_ = 0;                 // advances by 0x10 per block (VRAM)
 	BYTE hdma_blocks_remaining_ = 0;    // # of 0x10-byte blocks left
 
-
-
-	BYTE sb_ = 0;
-
 	// KEY1 (FF4D). Speed-switch stub: we don't actually run the CPU faster in
 	// double-speed mode (timing-wise we lie), but we surface the bit toggles
 	// that CGB-only games wait on after STOP. Without this, games like 007,
@@ -121,6 +117,9 @@ private:
 
 	// Address decoding helper
 	// bool is_unusuable(WORD addr) const; // Between FEA0 - FEFF
+
+	// used by the testing framework
+	std::string serial_output_;
 };
 
 
