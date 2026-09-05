@@ -22,7 +22,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Get dependencies
-        run: sudo apt-get update && sudo apt-get install -y autoconf autoconf-archive automake libtool rgbds libltdl-dev libx11-dev libxext-dev libwayland-dev
+        run: sudo apt-get update && sudo apt-get install -y autoconf autoconf-archive automake libtool libltdl-dev libx11-dev libxext-dev libwayland-dev
+      - name: Install RGBDS
+        run: |
+          curl -L -o rgbds.tar.xz https://github.com/gbdev/rgbds/releases/download/v1.0.3/rgbds-linux-x86_64.tar.xz
+          mkdir rgbds
+          tar xf rgbds.tar.xz -C rgbds
+          cd rgbds
+          sudo ./install.sh
       - name: Set up vcpkg
         uses: lukka/run-vcpkg@v11
       - name: clone WLA-DX
