@@ -22,7 +22,7 @@
               "repo": "https://github.com/mattcurrie/cgb-acid2.git",
               "ref": "04c6ca40cf75b6a93513fe596de4ab797efaff97",
               "dest": "cgb-acid2",
-              "submodules": false,
+              "submodules": true,
               "build": true
             }
           ]
