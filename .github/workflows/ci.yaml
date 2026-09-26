@@ -22,14 +22,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Get dependencies
-        run: sudo apt-get update && sudo apt-get install -y autoconf autoconf-archive automake libtool libltdl-dev libx11-dev libxext-dev libwayland-dev
-      - name: Install RGBDS
+        run: sudo apt-get update && sudo apt-get install -y autoconf autoconf-archive automake libtool libltdl-dev libx11-dev libxext-dev libwayland-dev bison libpng-dev pkg-config
+      - name: Build RGBDS v0.4.2 from source
+        # cgb-acid2's pinned mgblib submodule (frozen since 2021) is written
+        # entirely in RGBDS's pre-v0.5.0 syntax: bare `NAME SET value`
+        # definitions (removed in v0.5.0) and colon-style `name: MACRO`
+        # (removed in v0.7.0). Current RGBDS releases can't parse it, and
+        # v0.4.2 predates RGBDS's prebuilt Linux binaries, so build it from
+        # its source tarball instead. Its Makefile expects a `yacc` binary;
+        # bison's -y flag provides a compatible one.
         run: |
-          curl -L -o rgbds.tar.xz https://github.com/gbdev/rgbds/releases/download/v1.0.3/rgbds-linux-x86_64.tar.xz
-          mkdir rgbds
-          tar xf rgbds.tar.xz -C rgbds
-          cd rgbds
-          sudo ./install.sh
+          curl -L -o rgbds.tar.gz https://github.com/gbdev/rgbds/releases/download/v0.4.2/rgbds-0.4.2.tar.gz
+          mkdir rgbds-src
+          tar xf rgbds.tar.gz -C rgbds-src --strip-components=1
+          make -C rgbds-src YACC="bison -y"
+          echo "$GITHUB_WORKSPACE/rgbds-src" >> "$GITHUB_PATH"
       - name: Set up vcpkg
         uses: lukka/run-vcpkg@v11
       - name: clone WLA-DX
@@ -66,17 +73,6 @@ jobs:
           
           if [ "$submodules" == "true" ]; then
             git -C "p-docs/p-test/$dest" submodule update --init --recursive
-          fi
-
-          # cgb-acid2's pinned commit (frozen since 2021) vendors mgblib's
-          # hardware.inc from before RGBDS's v0.5.0 syntax rewrite (bare
-          # `NAME SET value` definitions, colon-style `name: MACRO`), which
-          # current RGBDS can no longer parse. Nothing else in this suite is
-          # affected — macros.asm already uses modern syntax — so swap in a
-          # current copy of just that one file rather than downgrading RGBDS.
-          if [ "$name" == "cgb-acid2" ]; then
-            curl -L -o "p-docs/p-test/$dest/mgblib/src/hardware.inc" \
-              https://raw.githubusercontent.com/mattcurrie/mgblib/master/src/hardware.inc
           fi
 
           if [ $build == "true" ]; then
