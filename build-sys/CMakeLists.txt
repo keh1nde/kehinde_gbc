@@ -14,13 +14,17 @@ project(kehindes_gameboycolor_emulator)
 enable_testing()
 set(CMAKE_CXX_STANDARD 20)
 
+# Must be set before add_subdirectory(test-sys) below — CMAKE_MSVC_RUNTIME_LIBRARY
+# only applies to targets created after it's set in the calling scope. Setting it
+# after test-sys was pulled in left test-sys's targets on MSVC's default dynamic
+# runtime while gbc_core got static, causing an LNK2038 CRT mismatch on Windows.
+cmake_policy(SET CMP0091 NEW)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../test-sys ${CMAKE_CURRENT_BINARY_DIR}/test-sys)
 
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
-
-cmake_policy(SET CMP0091 NEW)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 add_executable(kehindes_gameboycolor_emulator MACOSX_BUNDLE
         ../main.cpp
