@@ -45,6 +45,8 @@ void GBC_CPU::resetPostBoot() {
 
 	c_IME = false;
 	c_Halted = false;
+
+	bus_.write8(0xFF70, 1);
 }
 
 void GBC_CPU::resetPostBootARegister() {

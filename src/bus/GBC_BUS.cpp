@@ -62,14 +62,35 @@ BYTE GBC_BUS::read8(const WORD addr) {
 		return cart_.read_ram(addr);
 	}
 
-	// 8 KiB Work RAM (Bank 1 + Bank 2 collapsed — 0xC000-0xDFFF indexes into mmu_WorkRAM_[0..0x1FFF])
-	if (addr < 0xE000 && addr >= 0xC000) {
-		return mmu_WorkRAM_[addr - 0xC000];
+	// 8 KiB Work RAM, Bank 0
+	if (addr < 0xD000 && addr >= 0xC000) {
+		return mmu_WorkRAM_banks[0][addr - 0xC000];
 	}
 
-	// Echo RAM, inaccessible, but mirror WorkRAM
-	if (addr < 0xFE00 && addr >= 0xE000) {
-		return mmu_WorkRAM_[addr - 0xE000];
+	// 8 KiB Work RAM, Banks 1-7
+	if (addr < 0xE000 && addr >= 0xD000) {
+		const int bank = svbk_ & 0x07;
+		if (bank == 0) {
+			return mmu_WorkRAM_banks[1][addr - 0xD000];
+		}
+
+		return mmu_WorkRAM_banks[bank][addr - 0xD000];
+	}
+
+	// Echo RAM Banks 0
+	if (addr < 0xF000 && addr >= 0xE000) {
+		return mmu_WorkRAM_banks[0][addr - 0xE000];
+	}
+
+
+	// Echo RAM Banks 1-7, inaccessible
+	if (addr < 0xFE00 && addr >= 0xF000) {
+		const int bank = svbk_ & 0x07;
+		if (bank == 0) {
+			return mmu_WorkRAM_banks[1][addr - 0xE000];
+		}
+
+		return mmu_WorkRAM_banks[bank][addr - 0xE000];
 	}
 
 	// Object Attribute Memory
@@ -119,15 +140,39 @@ void GBC_BUS::write8(const WORD addr, const BYTE val) {
 		return;
 	}
 
-	// 8 KiB Work RAM (Bank 1 + Bank 2 collapsed)
-	if (addr < 0xE000 && addr >= 0xC000) {
-		mmu_WorkRAM_[addr - 0xC000] = val;
+	// 8 KiB Work RAM, Bank 0
+	if (addr < 0xD000 && addr >= 0xC000) {
+		mmu_WorkRAM_banks[0][addr - 0xC000] = val;
 		return;
 	}
 
-	// Echo RAM, inaccessible
-	if (addr < 0xFE00 && addr >= 0xE000) {
-		mmu_WorkRAM_[addr - 0xE000] = val; // Mirror of WorkRAM
+	// 8 KiB Work RAM, Banks 1-7
+	if (addr < 0xE000 && addr >= 0xD000) {
+		const int bank = svbk_ & 0x07;
+		if (bank == 0) {
+			mmu_WorkRAM_banks[1][addr - 0xD000] = val;
+			return;
+		}
+
+		mmu_WorkRAM_banks[bank][addr - 0xD000] = val;
+		return;
+	}
+
+	// Echo RAM Bank 0, inaccessible
+	if (addr < 0xF000 && addr >= 0xE000) {
+		mmu_WorkRAM_banks[0][addr - 0xE000] = val;
+		return;
+	}
+
+	// Echo RAM Banks 1-7, inaccessible
+	if (addr < 0xFE00 && addr >= 0xF000) {
+		const int bank = svbk_ & 0x07;
+		if (bank == 0) {
+			mmu_WorkRAM_banks[1][addr - 0xF000] = val;
+			return;
+		}
+
+		mmu_WorkRAM_banks[bank][addr - 0xF000] = val;
 		return;
 	}
 
@@ -219,6 +264,7 @@ BYTE GBC_BUS::read_io(const WORD addr) {
 	if (addr == 0xFF4F) return ppu_.read(addr);
 	if (addr >= 0xFF68 && addr <= 0xFF6B) return ppu_.read(addr);
 	if (addr == 0xFF6C) return ppu_.read(addr);
+	if (addr == 0xFF70) return svbk_;
 
 	// KEY1 (FF4D). Bit 7 = current speed (0=normal, 1=double), bit 0 = prepare,
 	// bits 1..6 read as 1.
@@ -313,6 +359,10 @@ void GBC_BUS::write_io(const WORD addr, const BYTE val) {
 			hdma_blocks_remaining_ = (val & 0x7F) + 1;
 			hdma_active_ = true;
 		}
+	}
+
+	if (addr == 0xFF70) {
+		svbk_ = val;
 	}
 
 	if (addr == 0xFF02 && (val & 0x80)) {

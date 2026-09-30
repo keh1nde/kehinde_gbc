@@ -66,6 +66,7 @@ private:
 
 	// ---- Memory objects ----:
 	std::array<BYTE, 0x8000> mmu_WorkRAM_{};
+	std::array<std::array<BYTE, 0x1000>, 8> mmu_WorkRAM_banks{};
 	std::array<BYTE, 0x007F> mmu_HighRAM_{};
 	std::array<BYTE, 0x900> mmu_BootROM_{};
 	std::array<BYTE, 0x80> mmu_IO_{}; // Public for test-sys
@@ -83,6 +84,7 @@ private:
 
 	// Other members
 	bool bootROM_enabled_ = false;
+	int svbk_ = 1; // WRAM bank select
 
 	// HDMA related members. hdma1..4 store the last value written (with the
 	// hardware bit-masks already applied) so source/dest can be reassembled at

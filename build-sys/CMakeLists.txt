@@ -21,6 +21,24 @@ set(CMAKE_CXX_STANDARD 20)
 cmake_policy(SET CMP0091 NEW)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
+# AddressSanitizer + UndefinedBehaviorSanitizer, opt-in via -DGBC_ENABLE_ASAN=ON.
+# Same ordering lesson as CMP0091 above: this must run before add_subdirectory
+# (test-sys) and before any add_executable/add_library, since add_compile_options/
+# add_link_options only affect targets created after they're called in the
+# calling scope — so gbc_test needs this instrumentation just as much as the
+# app does, and it only gets it if this block runs first. Only Clang/GCC are
+# wired up; MSVC's sanitizer support is limited and untested here, especially
+# combined with this project's static CRT linking on Windows.
+option(GBC_ENABLE_ASAN "Build with AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
+if(GBC_ENABLE_ASAN)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer -g)
+        add_link_options(-fsanitize=address,undefined)
+    else()
+        message(WARNING "GBC_ENABLE_ASAN requested but compiler '${CMAKE_CXX_COMPILER_ID}' isn't Clang or GCC — sanitizers were not enabled.")
+    endif()
+endif()
+
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../test-sys ${CMAKE_CURRENT_BINARY_DIR}/test-sys)
 
 find_package(SDL2 REQUIRED)
