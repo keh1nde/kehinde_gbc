@@ -59,13 +59,14 @@ public:
   // CgbState& cgb();              // TODO: define CgbState before re-enabling
 	// const CgbState& cgb() const;
 
-
-
+	// used by the testing framework
+	const std::string& serial_output() const { return serial_output_; }
 private:
 	// TODO: Include all other components later.
 
 	// ---- Memory objects ----:
 	std::array<BYTE, 0x8000> mmu_WorkRAM_{};
+	std::array<std::array<BYTE, 0x1000>, 8> mmu_WorkRAM_banks{};
 	std::array<BYTE, 0x007F> mmu_HighRAM_{};
 	std::array<BYTE, 0x900> mmu_BootROM_{};
 	std::array<BYTE, 0x80> mmu_IO_{}; // Public for test-sys
@@ -83,6 +84,7 @@ private:
 
 	// Other members
 	bool bootROM_enabled_ = false;
+	int svbk_ = 1; // WRAM bank select
 
 	// HDMA related members. hdma1..4 store the last value written (with the
 	// hardware bit-masks already applied) so source/dest can be reassembled at
@@ -92,10 +94,6 @@ private:
 	WORD hdma_src_ = 0;                 // advances by 0x10 per block
 	WORD hdma_dst_ = 0;                 // advances by 0x10 per block (VRAM)
 	BYTE hdma_blocks_remaining_ = 0;    // # of 0x10-byte blocks left
-
-
-
-	BYTE sb_ = 0;
 
 	// KEY1 (FF4D). Speed-switch stub: we don't actually run the CPU faster in
 	// double-speed mode (timing-wise we lie), but we surface the bit toggles
@@ -121,6 +119,9 @@ private:
 
 	// Address decoding helper
 	// bool is_unusuable(WORD addr) const; // Between FEA0 - FEFF
+
+	// used by the testing framework
+	std::string serial_output_;
 };
 
 

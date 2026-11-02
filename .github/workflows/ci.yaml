@@ -16,3 +16,85 @@ jobs:
         run: cmake --install build-sys/build --prefix $GITHUB_WORKSPACE/build-sys/dist
       - name: Verify codesign
         run: codesign --verify --deep --strict build-sys/dist/kehindes_gameboycolor_emulator.app
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get dependencies
+        run: sudo apt-get update && sudo apt-get install -y autoconf autoconf-archive automake libtool libltdl-dev libx11-dev libxext-dev libwayland-dev bison libpng-dev pkg-config
+      - name: Build RGBDS v0.4.2 from source
+        # cgb-acid2's pinned mgblib submodule (frozen since 2021) is written
+        # entirely in RGBDS's pre-v0.5.0 syntax: bare `NAME SET value`
+        # definitions (removed in v0.5.0) and colon-style `name: MACRO`
+        # (removed in v0.7.0). Current RGBDS releases can't parse it, and
+        # v0.4.2 predates RGBDS's prebuilt Linux binaries, so build it from
+        # its source tarball instead. Its Makefile expects a `yacc` binary;
+        # bison's -y flag provides a compatible one.
+        run: |
+          curl -L -o rgbds.tar.gz https://github.com/gbdev/rgbds/releases/download/v0.4.2/rgbds-0.4.2.tar.gz
+          mkdir rgbds-src
+          tar xf rgbds.tar.gz -C rgbds-src --strip-components=1
+          make -C rgbds-src YACC="bison -y"
+          echo "$GITHUB_WORKSPACE/rgbds-src" >> "$GITHUB_PATH"
+      - name: Set up vcpkg
+        uses: lukka/run-vcpkg@v11
+      - name: clone WLA-DX
+        run: git clone https://github.com/vhelin/wla-dx.git
+      - name: Configure
+        run: cmake -S build-sys -B build-sys/build -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build-sys/build
+      - name: Install
+        run: cmake --install build-sys/build --prefix $GITHUB_WORKSPACE/build-sys/dist
+      - name: build WLA-DX and add to PATH
+        run: |
+          cd wla-dx
+          cmake -S . -B build
+          cmake --build build
+          echo "$GITHUB_WORKSPACE/wla-dx/build/binaries" >> "$GITHUB_PATH"
+      - name: clone test utilities/roms
+        run: |
+          jq -c '.suites[]' test-sys/tests.json | while read -r suite; do
+          name=$(echo "$suite" | jq -r '.name')
+          repo=$(echo "$suite" | jq -r '.repo')
+          ref=$(echo "$suite" | jq -r '.ref')
+          dest=$(echo "$suite"| jq -r '.dest')
+          submodules=$(echo "$suite" | jq -r '.submodules')
+          build=$(echo "$suite" | jq -r '.build')
+          
+          if [ $submodules == "true" ]; then 
+            git clone "$repo" --recurse-submodules "p-docs/p-test/$dest"
+          else
+            git clone "$repo" "p-docs/p-test/$dest"
+          fi
+          
+          git -C "p-docs/p-test/$dest" checkout "$ref"
+          
+          if [ "$submodules" == "true" ]; then
+            git -C "p-docs/p-test/$dest" submodule update --init --recursive
+          fi
+
+          if [ $build == "true" ]; then
+            make -C "p-docs/p-test/$dest"
+          fi
+          done
+      - name: test
+        continue-on-error: true
+        run: ctest --test-dir build-sys/build --output-on-failure
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up vcpkg
+        uses: lukka/run-vcpkg@v11
+      - name: Configure
+        run: cmake -S build-sys -B build-sys/build -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build-sys/build --config Release
+      - name: Install
+        run: cmake --install build-sys/build --prefix $GITHUB_WORKSPACE/build-sys/dist --config Release

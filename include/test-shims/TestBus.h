@@ -8,6 +8,7 @@
 #include "../GBC_Types.h"
 #include <array>
 #include <iostream>
+#include <string>
 
 
 class TestBus final: public IBus{
@@ -23,8 +24,11 @@ public:
 
 	void requestInterrupt(Interrupt) override {}
 
-private:
+	// for use by the testing framework
+	const std::string& serial_output() const { return serial_output_; }
 
+private:
+	std::string serial_output_;
 };
 
 

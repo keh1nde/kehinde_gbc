@@ -8,6 +8,7 @@
 #include <ios>
 #include <iostream>
 #include <numbers>
+#include <stdexcept>
 
 GBC_CPU::GBC_CPU(IBus& bus)
 : c_ProgramCounter(0x0000), c_StackPointer(0xFFFE), c_A(0x11), c_B(0x00), c_C(0x00), c_D(0xFF),
@@ -44,6 +45,8 @@ void GBC_CPU::resetPostBoot() {
 
 	c_IME = false;
 	c_Halted = false;
+
+	bus_.write8(0xFF70, 1);
 }
 
 void GBC_CPU::resetPostBootARegister() {

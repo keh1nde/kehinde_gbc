@@ -4,6 +4,8 @@
 
 #include "GBC_CART.h"
 
+#include <stdexcept>
+
 namespace {
 	int rom_size_from_header(BYTE h148) {
 		// Header byte 0x148: total ROM size = 32 KiB << h148 for h148 in 0..8.
